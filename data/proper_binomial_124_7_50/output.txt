@@ -1,0 +1,30 @@
+Priority:  random
+Avg Revenue:  345.8
+Avg Delay:  156.35
+Avg Std Dev Delay (among agents):  1.7690545096676626
+Avg Num Conflicts:  70.64
+Avg waiting costs:  778.85
+Priority:  roundrobin
+Avg Revenue:  360.17
+Avg Delay:  137.46
+Avg Std Dev Delay (among agents):  1.4079211463022903
+Avg Num Conflicts:  71.21
+Avg waiting costs:  689.52
+Priority:  backpressure
+Avg Revenue:  360.36
+Avg Delay:  113.17
+Avg Std Dev Delay (among agents):  1.2641137376237914
+Avg Num Conflicts:  71.87
+Avg waiting costs:  573.18
+Priority:  secondprice
+Avg Revenue:  235.01
+Avg Delay:  140.72
+Avg Std Dev Delay (among agents):  1.6706227158585363
+Avg Num Conflicts:  69.79
+Avg waiting costs:  546.83
+Priority:  secondback
+Avg Revenue:  223.2907242591174
+Avg Delay:  120.8
+Avg Std Dev Delay (among agents):  1.4363416110088698
+Avg Num Conflicts:  67.01
+Avg waiting costs:  486.89

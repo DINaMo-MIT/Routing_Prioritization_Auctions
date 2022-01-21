@@ -3,6 +3,7 @@ from __future__ import print_function
 import collections
 import math
 import numpy as np
+from scipy.stats import norm
 import heapq as hq
 import uuid
 
@@ -16,10 +17,10 @@ CAPACITY = 1    # capacity of each grid cell
 
 Point = collections.namedtuple("Point", ["x", "y"])
 
-_Hex = collections.namedtuple("Hex", ["q", "r", "s"])
-class _Hex(_Hex):
+_H = collections.namedtuple("Hex", ["q", "r", "s"])
+class _Hex(_H):
     def __repr__(self):
-        return f'h({self.q}, {self.r}, {self.s})'
+        return 'h(' + self.q + ',' + self.r + ',' + self.s + ')'
 
 def Hex(q, r, s):
     assert not (round(q + r + s) != 0), "q + r + s must be 0"
@@ -143,7 +144,7 @@ def polygon_corners(layout, h):
 
 ## Visualization stuff
 
-def plot_locations(layout, coords, active):
+def plot_locations(layout, coords, active, radius = 5):
     """
     Plot location of agents at the moment. For visualization and debugging
     Inputs:
@@ -157,7 +158,7 @@ def plot_locations(layout, coords, active):
     for ag in active:
         locations[ag.loc] = (ag._id, ag.finished, ag.bid[0])
     
-    fig, ax = plt.subplots(1)
+    fig, ax = plt.subplots(1, dpi=radius * 25)
 
     # ax.set(xlim=(-7, 7), ylim=(-7,7))
     
@@ -183,7 +184,7 @@ def plot_locations(layout, coords, active):
             ax.add_patch(arrow)
             
         # # Also add a text label
-        ax.text(x, y, locations[h][0] if h in locations.keys() else '', ha='center', va='center', size=20)
+        ax.text(x, y, locations[h][0] if h in locations.keys() else '', ha='center', va='center', fontsize="medium")
 
     # Also add scatter points in hexagon centres
     # ax.scatter(hcoord, vcoord, c=[c[0].lower() for c in colors], alpha=0.5)
