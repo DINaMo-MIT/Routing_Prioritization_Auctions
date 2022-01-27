@@ -6,6 +6,7 @@ import numpy as np
 from scipy.stats import norm
 import heapq as hq
 import uuid
+from copy import deepcopy
 
 import matplotlib.pyplot as plt
 from matplotlib.patches import RegularPolygon, Arrow
