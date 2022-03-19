@@ -3,13 +3,15 @@ from __future__ import print_function
 import collections
 import math
 import numpy as np
-from scipy.stats import norm
+from scipy.stats import norm, poisson
 import heapq as hq
 import uuid
 from copy import deepcopy
 
 import matplotlib.pyplot as plt
-from matplotlib.patches import RegularPolygon, Arrow
+from matplotlib.patches import RegularPolygon, Arrow, FancyArrow
+import matplotlib.lines as lines
+import seaborn as sns
 
 # define constants
 CAPACITY = 1    # capacity of each grid cell
@@ -21,7 +23,7 @@ Point = collections.namedtuple("Point", ["x", "y"])
 _H = collections.namedtuple("Hex", ["q", "r", "s"])
 class _Hex(_H):
     def __repr__(self):
-        return 'h(' + self.q + ',' + self.r + ',' + self.s + ')'
+        return 'h(' + str(self.q) + ',' + str(self.r) + ',' + str(self.s) + ')'
 
 def Hex(q, r, s):
     assert not (round(q + r + s) != 0), "q + r + s must be 0"
