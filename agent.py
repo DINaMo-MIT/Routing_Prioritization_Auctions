@@ -35,7 +35,31 @@ class Agent():
         
         self._id = uuid.uuid4()
         self._operator = operator
-        
+
+    @property
+    def id(self):
+        return self._id
+
+    @property
+    def cost(self):
+        return self._var_cost
+
+    @property
+    def depart(self):
+        return self._depart_t
+    
+    @property
+    def scheduled(self):
+        return self._schedule_t
+    
+    @property 
+    def arrival(self):
+        return self._arrival_t
+
+    @property
+    def steps(self):
+        return self._steps
+
     @property
     def bid(self):
         """

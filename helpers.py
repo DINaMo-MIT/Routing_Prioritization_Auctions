@@ -194,4 +194,3 @@ def plot_locations(layout, coords, active, radius = 5):
     ax.set_aspect('equal')
     ax.autoscale()
     plt.show()
-    

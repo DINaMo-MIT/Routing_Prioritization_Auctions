@@ -241,7 +241,7 @@ def create_hubspoke(num_agents = [50, 50, 50], radius = 7, seed = None):
             org = 0
             dest = rand.choice(len(grid.coords_l))
 
-            t += poisson.rvs(mu=2)
+            t += poisson.rvs(mu=2, random_state=seed)
 
             init_time = t
             var_cost = rand.integers(1, 10)
@@ -308,3 +308,31 @@ def create_connected(radius = 3, iters = 10, seed = None):
     return grid, agents, schedule
 
 # create_connected(4)
+
+def create_single():
+    """
+    Creates a single agent going from (3, -3, 0) to (0, 0, 0)
+    """
+
+    grid = Grid(3)
+
+    agents = []
+    schedule = {}
+
+    ag = Agent(Hex(3, -3, 0), Hex(0, 0, 0), 2, 0)
+    agents.append(ag)
+    schedule[0] = [ag]
+
+    return grid, agents, schedule
+
+def create_custom(agents, radius = 3):
+    grid = Grid(radius)
+    schedule = {}
+
+    for ag in agents:
+        init_time = ag.depart
+
+        if init_time in schedule.keys(): schedule[init_time].append(ag)
+        else: schedule[init_time] = [ag]
+    
+    return grid, agents, schedule
