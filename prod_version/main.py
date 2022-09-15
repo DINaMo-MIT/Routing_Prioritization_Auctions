@@ -5,7 +5,7 @@ from envs import *
 from simulate import *
 
 
-## testing
+## testing  
 # grid size = sum(1 to n) * 6 + 1
 # grid, agents, schedule = create_random(num_agents=5, radius = 2, seed = 10)
 # seed = np.random.randint(1000)

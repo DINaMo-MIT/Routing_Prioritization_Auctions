@@ -1,4 +1,5 @@
 from helpers import *
+CAPACITY = 1
 
 class Grid():
     """
