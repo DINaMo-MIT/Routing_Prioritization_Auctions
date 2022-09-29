@@ -1,7 +1,7 @@
 from helpers import *
-CAPACITY = 1
+from grid import *
 
-class Grid():
+class GridCapacity(Grid):
     """
     Contains the environment, the auctioneer
     
@@ -11,54 +11,13 @@ class Grid():
         (0, -1, 1)   (1, -1, 0)
     (-1, 0, 1)  (0,0,0)  (1, 0, -1)
         (-1, 1, 0)   (0, 1, -1)
+
+
+        (-1, 1, 0)   (0, 1, -1)
+    (-1, 0, 1)  (0,0,0)  (1, 0, -1)
+        (0, -1, 1)   (1, -1, 0)
     """
     
-    
-    def __init__(self, radius=1):
-        """
-        Creates Grid object
-        
-        Inputs:
-            agents: list, agents in the environment
-
-        """
-        self._revenue = 0
-        
-        self.coords = create_hex_grid(radius)
-        self.coords_l = list(self.coords)
-        # if you want to do capacities, make a dictionary with {hex: capacity}
-        
-        # track the number of rounds an agent has been waiting {agent id: rounds waited}
-        self._roundrobin = {}
-        
-        # track type of prioritization - default random
-        # can be [random, roundrobin, backpressure]
-        self._priority = "random"
-        
-        self.num_conflicts = 0
-        self.radius = radius
-        
-    @property
-    def revenue(self):
-        """
-        Returns current revenue of grid
-        Returns:
-            out: integer
-        """
-        return self._revenue
-    
-    @property
-    def priority(self):
-        return self._priority
-    
-    def set_priority(self, method):
-        """
-        Set the prioritization method
-        Inputs:
-            method: string of type of prioritization
-        """
-        assert method in ["random", "roundrobin", "backpressure", "secondprice", "secondback"]
-        self._priority = method
         
     def step_sim(self, locations, bids):
         """
@@ -76,7 +35,7 @@ class Grid():
         
         # build node graph - all departing flights are treated as coming from one massive ground node -1
         in_graph = {}   # inverse graph - points from inbound to outbound
-        requests = {}   # dictionary of all locations requested and hwho's requesting
+        requests = {}   # dictionary of all locations requested and who's requesting - {loc: [(id, price), ...]}
         for loc, (_id, (next_loc, price)) in zip(locations.values(), bids.items()):
 
             if price == -1: continue
@@ -97,24 +56,20 @@ class Grid():
         # print("graph\n", in_graph)
         # identify cycles (skipping for now)
         # print('requests', requests)
-        cycle_ids = []
-        for req in requests.keys():
-            temp = self.find_cycles(in_graph, req)
-            for loc in temp:
-                count = 0
-                for _id in locations.keys():
-                    if _id not in cycle_ids and locations[_id] == loc and bids[_id][0] in temp and count < CAPACITY:
-                        cycle_ids.append(_id)
-                        count += 1
-                        
+        assert 1==1
+        # find cycles
+        cycle_ids = self.move_cycles(bids, requests, locations)
+        
         # print("cycling _id", cycle_ids)
+        # clear cycles to move
         for _id in cycle_ids:
             commands[_id] = bids[_id]
         
         
         # calculate backpressure and sort - order is which sectors to deconflict first
             # NOTE: both backpressure and cycles requires building a graph at each step
-        pressures = {req: self.calc_backpressure(in_graph, req) for req in requests.keys()}
+        # pressures = {req: self.calc_backpressure(in_graph, req) for req in requests.keys()}     # replace pressures with the find_backpressure new function
+        pressures = self.calc_backpressure(bids, requests, locations, cycle_ids)
         order = sorted(requests, key=lambda req: pressures[req], reverse=True)
 
         # handling every sector now
@@ -143,11 +98,13 @@ class Grid():
                     # the 4 line block is the key
                     # assert bids[i][0] == loc
                     for i in range(len(undecided)):
-                        (win_i, price) = undecided.pop(i)
+                        (win_i, price) = undecided[i]
                         commands[win_i] = (bids[win_i][0], 0)   # append comamnd
                         self._revenue += 0
                         decided.append((win_i, price))
-                        
+                    
+                    undecided = []      # clear the entire list
+
                 # if you don't have capacity and have to decide
                 else: 
 #                     print("contested", loc)
@@ -159,7 +116,7 @@ class Grid():
                             win, win_id, price = self.roundrobin_prioritization(undecided)
                             undecided.pop(win)
                         elif self._priority == "backpressure": 
-                            win, win_id, price = self.backpressure_prioritization(undecided, locations, in_graph)
+                            win, win_id, price = self.backpressure_prioritization(undecided, locations, pressures)
                             undecided.pop(win)
                         elif self._priority == "secondprice" :
                             win, win_id, price = self.secondprice_prioritization(undecided)
@@ -173,8 +130,8 @@ class Grid():
                             
                         if self._priority == "secondback":
                             # print(commands)
-                            for move_id, move_price in moves:
-                                commands[move_id] = [bids[move_id][0], move_price]
+                            for _id, price in moves:
+                                commands[_id] = [bids[_id][0], price]
                             # print(commands)
                             
                         else:
@@ -187,8 +144,14 @@ class Grid():
             # end dealing with the sector - mark undecided as hold
             for (_id, price) in undecided:
                 commands[_id] = (None, 0)
-                self._roundrobin[_id] += 1
+                # self._roundrobin[_id] += 1
                 if locations[_id] in requests: requests[locations[_id]].append((_id, price))
+
+        # round robin updates
+        for _id, (loc, price) in commands.items():
+            assert price >= 0
+            if loc == None: self._roundrobin[_id] += 1
+            else: self._roundrobin[_id] = 0
 
         # print("locs", locations)
         # print("bids", bids)
@@ -208,7 +171,9 @@ class Grid():
             win_id: id of winning agent
             price: price the agent pays
         """
+        # if there's a seed use it
         if seed: rand = np.random.default_rng(seed)
+        elif self.seed: rand = np.random.default_rng(self.seed)
         else: rand = np.random.default_rng()
         
         win = rand.integers(len(undecided))
@@ -219,7 +184,7 @@ class Grid():
     def roundrobin_prioritization(self, undecided):
         """
         Trying to set up round robin prioritization around the grid
-        If tied, first instance in undecided gets to go
+        DEFAULT - If tied, first instance in undecided gets to go
         Inputs:
             undecided: list of tuples (index, price) of undecided flights
         Returns:
@@ -239,45 +204,68 @@ class Grid():
         
         # set highest wait to 0, b/c they're getting to move
         self._roundrobin[undecided[high_index][0]] = 0
-        
         (win_id, price) = undecided[high_index]
                                                                              
         return high_index, win_id, price
         
-        
-    def backpressure_prioritization(self, undecided, locations, graph):
+    def backpressure_prioritization(self, undecided, locations, pressures):
         """
         Using backpressure to resolve conflicts
         Inputs:
             undecided: list of tuples (_id, price) of undecided flights
             locations: {id:Hex} dictionary of all locations of agents
-            graph: dictionary of Hex {inbound sector: [outbound sectors]}
+            pressures: dictionary of hex and backpressure on hex {loc (Hex): backpressure (int)}
         Returns:
-            high_index: integer of current flights following
+            high_index: integer of an index in undecided
+            win_id: id of winning agent
+            price: price the agent pays
         """
         
         high_press = 0
         high_index = 0
+        # high_id = -1
+        # high_robin = 0
         
         # find the highest backpressure
         for i, (_id, price) in enumerate(undecided):
-            back_press = self.calc_backpressure(graph, locations[_id])
+            # back_press = self.calc_backpressure(graph, locations[_id])
+            # back_press = self.calc_backpressure(bids, requests, locations, cycle_ids)
+            update = False
+
+            # if hex isn't in pressures, call it 0, it's ground -1
+            if locations[_id] not in pressures: back_press = 0
+            else: back_press = pressures[locations[_id]]
             
+            # check backpressure, tiebreak roundrobin
             if back_press > high_press:
+                update = True
+            elif back_press == high_press:
+                temp = [undecided[high_index], (_id, price)]
+                index, _, _ = self.roundrobin_prioritization(temp)
+                if index == 1:      # default is first instance goes
+                    update = True
+
+            # update step
+            if update:
                 high_press = back_press
                 high_index = i
+                # high_id = _id
+
+            # if back_press > high_press or (back_press == high_press and self._roundrobin[_id] > high_robin):    
+            #     high_press = back_press
+            #     high_index = i
+            #     high_id = _id
+            #     high_robin = self._roundrobin[_id]
        
         (win_id, price) = undecided[high_index]
-                                                                             
+                                                                            
         return high_index, win_id, price
-    
     
     def secondprice_prioritization(self, undecided):
         """
         Sealed second price auction for locations - single square bid
     
         Inputs:
-            requests: dictionary of (loc, (agent_id, bid)) to resolve
             num_agents: number of agents bidding
         
         Returns:
@@ -320,30 +308,31 @@ class Grid():
             # recursive helper function - input of undecided, graph - append that node's value to
         chains = [] # store chains
         for (_id, _) in undecided:
+
             chains.extend(self.secondback_helper(locations, invlocations, graph, bids, _id))
 
-        # create the full total price
         for chain in chains:
             chain["total"] = sum(chain["price"])
 
+        # print("chains\n", chains)
+        # find the winner and price
+            # search like in second price
         
-        # the second price part similar to secondprice method
+        # high_index, winner = max(enumerate(chains), key=lambda c: c[1]["total"])
+        
+        # # new = set(chains)
+        # # new.remove(winner)
+        # # print(chains)
+        # chains.remove(winner)
+
+        # if not chains: price = 0
+        # else: price = max(chains, key=lambda x: x["total"])["total"]
+        
         chains = sorted(chains, key = lambda c: c["total"], reverse=True)
         # print(chains)
         winner = chains[0]
-        # price = chains[1]["total"]
-
-        # find second highest chain without intersection of winner
-        winset = set(winner["chain"])
-        index = 1
-        price = 0
-        while index < len(chains):
-            intersection = [x for x in chains[index]["chain"] if x in winset]
-            if len(intersection) == 0:
-                price = chains[index]["total"]
-                index = len(chains)
-            index += 1
-
+        price = chains[1]["total"]
+        
         high_index = None
         for j, (_id, _) in enumerate(undecided):
             if not high_index and _id == winner["chain"][-1]:
@@ -353,7 +342,7 @@ class Grid():
         # print(winner, high_index)
         # print(price)
 
-        # put out the commands for each agent
+        # commands
         commands = []
         for _id, bid in zip(winner["chain"], winner["price"]):
             if winner["total"] == 0:
@@ -377,11 +366,6 @@ class Grid():
     def secondback_helper(self, locations, invlocations, graph, bids, _id):
         """
         Assume for now that it's just one transition every time - can break this problem later
-
-        Recursive function that calculates a backpressure chain. 
-
-        Outputs: 
-            chains: an [] of dictionaries {chain: [], price: int}
         
         Return a []
         """
@@ -399,7 +383,7 @@ class Grid():
             # duplicate a query for every outbound sector listed
         chains = []
         for out_loc in graph[in_loc]:
-            # dealing with the -1 case - if the next one is a grounded agent build the id and chain like base case
+            # dealing with the -1 case
             out_id = None
             if out_loc == -1:
 
@@ -411,9 +395,10 @@ class Grid():
 
                 chain_add = [{"chain": [out_id], "price": [bids[out_id][1]]}]
 
-            # recursive call - otherwise append the out_id and chain value by the rest of the chain
             else:   
                 out_id = invlocations[out_loc]
+
+            # print(out_id)
                 chain_add = self.secondback_helper(locations, invlocations, graph, bids, out_id)
                        
             chains += chain_add
@@ -422,77 +407,158 @@ class Grid():
         # look up price and sum to every element of [chain, chain, ....] returned from above
             # where chain is {chain: [_ids], price: int}
         
-        # add yourself to the chain
         for chain in chains:
             chain["chain"].append(_id)
             chain["price"].append(bids[_id][1])
         
         # return that array of chains
+        # print("helper", chains)
         return chains
-    
-    def find_cycles(self, graph, request, incoming = []):
+
+### CYCLING AND BACKPRESSURE PART
+    def move_cycles(self, bids, requests, locations):
         """
-        Recursive function that finds the cycles active 
+        Function finding all agents that get free pass to move as part of cycle
+        Input:
+            bids: all active agent bids {id : (next_loc, price)}
+            requests: array of {loc: [(id, price), ...]}
+            locations: {id: loc}
+        Output:
+            cycle_ids: [_ids], list of all _ids that get priority move
         """
-        # if the request isn' in the graph, or all elements in [outgoing] are takeoff requests (-1)
-        # or the recursion is too deep, there is no cycle and return []
-        if request in graph.keys():
-            new_ag = True
-            for req in graph[request]:
-                if req != -1:
-                    new_ag = False
         
-            if new_ag or len(incoming) > 50:
-                return []
-        else:
+        sectors = {}    # turn from requests to {loc: [id, ...]}
+        for (_id, loc) in locations.items():
+            if loc not in sectors: sectors[loc] = []
+            sectors[loc].append(_id)
+
+        scanned = set()
+
+        # start searching through the list
+        cycle_ids = []
+        count = 0
+        for (_id, req_loc) in locations.items():
+            if req_loc == -1 or _id in scanned: continue     # check that this location hasn't been scanned in other parts
+            count += 1
+            cycle_ids += self.find_cycles(req_loc, sectors, bids, scanned, [[],[]])     # call recursion and search
+
+        return cycle_ids
+    
+
+    def find_cycles(self, req_loc, sectors, bids, scanned, incoming=[[],[]]):
+        """
+        Recursive function finding the cycles - NOTE, WHY NOT USE LOCATIONS/REQUESTS AND BUILD BACKWARDS SEARCH?
+        Input:
+            req_loc: next_loc, the requested sector
+            # requests: array of {loc: [(id, price), ...]}
+            sectors: agents at which location, {loc: [id, ...]} 
+            bids: all active agent bids, {id : (next_loc, price)}
+            scanned: set of all flights already scanned, {id, ...}
+            incoming: a chain of requested sectors and ids, [[loc, ...],[id, ...]]
+        Output:
+            pressures: array of ids representing the cycle, [id, ...]
+        """
+        # skip req_loc == -1
+        assert req_loc != -1
+
+        # base case: there are no flights here
+        if req_loc not in sectors:
             return []
-            
-        # if request not in graph.keys() or graph[request][0] == -1 or len(incoming) > 50:
-            # return []
-  
-        # cycle detection, you've found yourself in your own incoming chain
-        if request in incoming:
+
+        # cycle detection: you've found yourself in your own incoming chain
+        if req_loc in incoming[0]:
             # print("req", request)
             # print("incoming", incoming)
-            return incoming
-        
-        # recursive call, if pressures is anything it'll return the cycle
-        pressures = []
-        incoming.append(request)
-        for req in graph[request]:
-            pressures += self.find_cycles(graph, req, incoming)
-        
-        incoming.pop()
+
+            cut = incoming[0].index(req_loc)    # cut out the loop itself, ignore the other pieces - consider try/except for runtime improvement
+            return incoming[1][cut:]
+
+        # recursive: run backward until you find yourself
+        pressures = []      # should track id's
+        for _id in sectors[req_loc]:
+            # [IMPLEMENT] chekc if this _id has been checked already
+            if _id in scanned: continue
+
+            incoming[0].append(req_loc)        # add to chain - PRIORITIZATION IS RANDOM rn
+            incoming[1].append(_id)        
+
+            next_loc = bids[_id][0]     # pulling out the next location
+            pressures += self.find_cycles(next_loc, sectors, bids, scanned, incoming)
+
+            if len(pressures) > 0: 
+                for _id in pressures:
+                    scanned.add(_id)
+                break        # if cycle found len(pressures) > 0, remove all ids in that cycle
+
+            incoming[0].pop()       # pop off the end that we added
+            incoming[1].pop()
+            scanned.add(_id)        # add to set of scanned ids
+
         return pressures
+
     
-    
-    def calc_backpressure(self, graph, request, depth = 0):
+    def calc_backpressure(self, bids, requests, locations, cycle_ids):
         """
-        Calculate backpressure recursively, by starting from conflicted sectors
-        and following inbound flights
-        Inputs:
-            graph: dictionary of Hex {inbound sector: [outbound sectors]}
-            request: Hex of inbound sector to calculate backpressure from
-            incoming: runnign record of 
-            //depth: max depth of recursion
+        Wrapper for recursive function - stores all the backpressures
+        Input:
+            bids: all active agent bids {id : (next_loc, price)}
+            requests: array of {loc: [(id, price), ...]}
+            locations: locations of agents {id: loc}
+            cycle_ids: all _ids in cycles, [_id, ...]
         Returns:
-            out: integer of current flights following
+            backpressures: dict of backpressures at requests {req (Hex): backpressure (int)}
         """
-        # if the request isn' in the graph, or all elements in [outgoing] are takeoff requests (-1)
-        # or the recursion is too deep, there is no cycle and return 0
-        
-        if request in graph.keys():
-            new_ag = True
-            for req in graph[request]:
-                if req != -1:
-                    new_ag = False
-            
-            if new_ag or depth > 50:
-                return 0
-        else:
+
+        # method 2 - smarter DP ideally
+        backpressures = {}
+        for req_loc, _ in requests.items():       # have to check backpressure on every single sector
+
+            if req_loc in backpressures: continue   # DP check if we have a value already
+
+            # feed into track_backpressure 
+            pressure = self.track_backpressure(requests, locations, cycle_ids, backpressures, req_loc)
+            backpressures[req_loc] = pressure
+
+        return backpressures 
+
+    def track_backpressure(self, requests, locations, cycle_ids, backpressures, req_loc):
+        """
+        Input:
+            requests: array of {loc: [(id, price), ...]}
+            locations: locations of agents {id: loc}
+            cycle_ids: all _ids in cycles, [_id, ...]
+            backpressures: dict for shortcut on sectors, {loc: int}
+            req_loc: requested location, loc
+        Returns:
+            output: the pressure at req_loc, int
+        """
+        assert req_loc != -1  # check that requested location isn' ground - otherwise infinite recursion
+
+        # base case - if you're not in requests (but not cycled, checked in layer aboe), return 0
+        if req_loc not in requests:
+            backpressures[req_loc] = 0
             return 0
 
-        # recursion to catch the rest of the pressures
-        pressures = [self.calc_backpressure(graph, req, depth + 1) for req in graph[request]]
-        return max(pressures) + 1
+        pressures = [0]     # default pressure 0
+        for _id, price in requests[req_loc]:
+
+            cur_loc = locations[_id]        # find location of the _id     
+            if cur_loc == -1: continue      # if the next location is ground skip recursion
+
+            if _id in cycle_ids: continue       # check if _id is in a cycle - skip if so
+            if _id in backpressures:        # check if this _id's has a backpressure associated
+                pressures.append(backpressures[_id])
+                continue
+
+            # if cur_loc isn't in requests, it's not being requested and backpressure is 0
+            # if cur_loc not in requests:
+            #     backpressures[cur_loc] = 0
+            #     continue
+
+            # jump to that location - recursion
+            pressures.append(self.track_backpressure(requests, locations, cycle_ids, backpressures, cur_loc))
         
+        # output, store to backpressures
+        output = max(pressures) + 1
+        backpressures[req_loc] = output
+        return output

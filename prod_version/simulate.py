@@ -19,7 +19,14 @@ def simulate(grid, agents, schedule, prior = None, iters = 1e4, seed = 0, vis = 
         delay:
         std delay:
         num_conflicts
+        pay costs:
         wait costs:
+        weighted std delay:
+        normalized pay costs:
+        normalized wait costs:
+        operator counts:
+        operator raw delay:
+        operator weighted delay:
     """
     
     ## Initialization
@@ -42,7 +49,7 @@ def simulate(grid, agents, schedule, prior = None, iters = 1e4, seed = 0, vis = 
         
         # plotting and visualization
 
-        if vis: plot_locations(layout, grid.coords_l, active)
+        if vis: plot_locations_2(layout, grid.coords_l, active, radius = grid.radius)
         
         # for debugging, print all agent locations
         if debug:
@@ -90,22 +97,55 @@ def simulate(grid, agents, schedule, prior = None, iters = 1e4, seed = 0, vis = 
         print("Priority: ", grid.priority)
 
     delays = []
+    delays_weighted = []
     agent_waits = []
+    agent_waits_norm = []
+
+    # Operator questions
+    operator_delay = {}
+    operator_delay_waits = {}
+    operator_counts = {}
+
+    operate = False
+    if agents[0].operator: operate = True
         # get costs and revenue
     for i, ag in enumerate(agents):
         if output: 
-            print("Agent ", i, " costed ", ag.costs, "finished", ag.finished, "departure, scheduled, arrived", ag._depart_t, ag._schedule_t, ag._arrival_t, "price", ag._var_cost)   # think of this as extra/delayed costs
+            print("Agent ", i, "operator ", ag.operator, " costed ", ag.costs, "finished", ag.finished, "departure, scheduled, arrived", ag._depart_t, ag._schedule_t, ag._arrival_t, "price", ag._var_cost)   # think of this as extra/delayed costs
             
         delays.append(ag._arrival_t - ag._schedule_t)
+        delays_weighted.append((ag._arrival_t - ag._schedule_t) * ag._var_cost)
         agent_waits.append(np.array(ag.costs))
-    agent_waits = np.array(agent_waits)
+        agent_waits_norm.append(np.array(ag.costs) / ag._var_cost)
 
+        if operate:
+            if ag.operator not in operator_delay.keys():
+                operator_delay[ag.operator] = 0
+                operator_delay_waits[ag.operator] = np.zeros(3)
+                operator_counts[ag.operator] = 0
+            
+            operator_delay[ag.operator] += ag._arrival_t - ag._schedule_t
+            operator_delay_waits[ag.operator] += np.concatenate((ag.costs, [ag._var_cost]))
+            operator_counts[ag.operator] += 1
+        
+    agent_waits = np.array(agent_waits)
+    agent_waits_norm = np.array(agent_waits_norm)
+    # print(agent_waits)
     if output:
         print("Total Revenue: ", grid.revenue)
         print("Total Conflicts: ", grid.num_conflicts)
         print("Total Delay: ", np.sum(delays))
         print("Std Dev Delay: ", np.std(delays))
-        print("Total Wait Costs: ", np.sum(agent_waits[:, 0]))
-    
+        print("Total Pay Costs: ", np.sum(agent_waits[:, 0]))
+        print("Total Wait Costs: ", np.sum(agent_waits[:, 1]))
+        
+        print("Std Dev Normalized Delay: ", np.std(delays_weighted))
 
-    return grid.revenue, np.sum(delays), np.std(delays), grid.num_conflicts, np.sum(agent_waits[:, 0])
+        print("Total Normalized Pay Costs: ", np.sum(agent_waits_norm[:, 0]))
+        print("Total Normalized Wait Costs: ", np.sum(agent_waits_norm[:, 1]))
+    
+        if operate:
+            for op in operator_delay.keys():
+                print("Operator ", op, "# agents ", operator_counts[op], "raw delay ", operator_delay[op], "weighted delay ", operator_delay_waits[op])
+
+    return grid.revenue, np.sum(delays), np.std(delays), grid.num_conflicts, np.sum(agent_waits[:, 0]), np.sum(agent_waits[:, 1]), np.std(delays_weighted), np.sum(agent_waits_norm[:, 0]), np.sum(agent_waits_norm[:, 1]), operator_counts, operator_delay, operator_delay_waits

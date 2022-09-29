@@ -13,7 +13,7 @@ class Grid():
     """
     
     
-    def __init__(self, radius=1):
+    def __init__(self, radius=1, seed=None):
         """
         Creates Grid object
         
@@ -34,7 +34,9 @@ class Grid():
         self._priority = "random"
         
         self.num_conflicts = 0
-        
+        self.seed = seed
+        self.radius = radius
+
     @property
     def revenue(self):
         """
@@ -130,10 +132,10 @@ class Grid():
 
             # resolve capacities
             # check if you still have capacity
-            assert len(decided) <= CAPACITY, print(decided, "\n", locations, "\n", bids, "\n", commands, "\n", loc)
+            assert len(decided) <= CAPACITY, print(decided, "\n", locations, "\n", bids, "\n", commands, "\n", loc)     # sanity check
             if len(decided) < CAPACITY:
                 
-                # if you still have capacity 
+                # if you still have capacity and still have flights waiting
                 if len(undecided) <= CAPACITY - len(decided):
 
                     # function for moving undecided into G (aka all go)

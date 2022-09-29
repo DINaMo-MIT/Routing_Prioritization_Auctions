@@ -2,7 +2,7 @@ from helpers import *
 
 class Agent():
     
-    def __init__(self, origin, dest, var_cost, depart_t = 0):
+    def __init__(self, origin, dest, var_cost, depart_t = 0, operator = None):
         
         """
         Initialize an Agent navigating the environment
@@ -34,6 +34,7 @@ class Agent():
         self._arrival_t = None
         
         self._id = uuid.uuid4()
+        self._operator = operator
         
     @property
     def bid(self):
@@ -68,6 +69,15 @@ class Agent():
             out: Hex of location
         """
         return self._dest
+    
+    @property
+    def operator(self):
+        """
+        Return operator
+        Returns:
+            out: operator
+        """
+        return self._operator
     
     @property
     def finished(self):

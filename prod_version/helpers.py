@@ -13,8 +13,8 @@ from matplotlib.patches import RegularPolygon, Arrow, FancyArrow
 import matplotlib.lines as lines
 import seaborn as sns
 
-# define constants
-CAPACITY = 1    # capacity of each grid cell
+# Define constants
+CAPACITY = 2
 
 ## Hex stuff
 
@@ -191,6 +191,71 @@ def plot_locations(layout, coords, active, radius = 5):
 
     # Also add scatter points in hexagon centres
     # ax.scatter(hcoord, vcoord, c=[c[0].lower() for c in colors], alpha=0.5)
+    ax.set_aspect('equal')
+    ax.autoscale()
+    plt.show()
+
+def plot_locations_2(layout, coords, active, radius = 5):
+
+    agents = {}
+    locations = {}
+    for ag in active:
+        agents[ag._id] = (ag.loc, ag.finished, ag.bid[0])
+        
+        # build the text box
+        if ag.loc not in locations: locations[ag.loc] = []
+        text = str(ag._id)
+        # check if finished
+        if ag.finished: text += "*"
+        locations[ag.loc].append(text)
+
+    fig, ax = plt.subplots(1, dpi=radius * 25, figsize=(radius*3, radius*3))
+    # ax.set(xlim=(-7, 7), ylim=(-7,7))
+
+    # draw basic grid first
+    for h in coords:
+
+        # print(hex_to_pixel(layout, h))
+        x, y = hex_to_pixel(layout, h)
+        hex = RegularPolygon((x,y), numVertices=6, radius= 1, 
+                             orientation=np.radians(0), 
+                             facecolor= None, alpha=0.2, edgecolor='k')
+        ax.add_patch(hex)
+
+    # build cells for the relevant sectors
+    for _id, info in agents.items():
+        if info[0] == -1: continue
+
+        # set color - if done Green, else Red
+        if info[1]: color = "Green"
+        else: color = "Red"
+
+        # draw the hex
+        x, y = hex_to_pixel(layout, info[0])
+        hex = RegularPolygon((x,y), numVertices=6, radius= 1, 
+                             orientation=np.radians(0), 
+                             facecolor= color, alpha=0.2, edgecolor='k')
+        ax.add_patch(hex)
+
+        # draw the arrow
+        if info[2] is not None:
+            x_n, y_n = hex_to_pixel(layout, info[2])
+            dx = x_n - x
+            dy = y_n - y
+            arrow = Arrow(x + dx/4, y + dy/4, dx/2, dy/2, width=0.25)
+            ax.add_patch(arrow)
+    
+    # build the text box
+    for loc, text in locations.items():
+        if loc == -1: continue
+        x, y = hex_to_pixel(layout, loc)
+
+        output = ""
+        for ag_text in text:
+            output += ag_text + ","
+
+        ax.text(x, y, output[:-1], ha='center', va='center', fontsize="medium")
+    
     ax.set_aspect('equal')
     ax.autoscale()
     plt.show()
