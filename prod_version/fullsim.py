@@ -6,7 +6,7 @@ from simulate import *
 
 ## Try multiple runs of different tests
 def full_sim(run = 1):
-    methods = ["random", "roundrobin", "backpressure"]
+    methods = ["random", "roundrobin", "backpressure", "secondprice", "secondback"]
 
     data_avg_rev = []
     data_avg_del = []
@@ -32,7 +32,7 @@ def full_sim(run = 1):
     cases = []
     operator_flag = True
     for i in range(samples):
-        if run == 1: grid, agents, schedule = create_random(num_agents=124, radius=4, iters=50, operator_flag=True, seed = i + 100)
+        if run == 1: grid, agents, schedule = create_random(num_agents=124*2, radius=4, iters=50, operator_flag=True, seed = i + 100)
         elif run == 2: grid, agents, schedule = create_bimodal(num_agents=126, radius=7, time=50, operator_flag = operator_flag, seed = i + 1000)
         # grid, agents, schedule = create_crossing(num_agents = [40,60], radius = 7, time = 50, points = 4, seed=i+1000)
         elif run == 3: grid, agents, schedule = create_crossing(num_agents = [30, 40, 30], radius = 7, time = 50, points = 4, seed=i + 1000)
@@ -170,4 +170,5 @@ def full_sim(run = 1):
 
     
 if __name__ == "__main__":
-    output = full_sim(run = 2)
+    for i in range(1, 5):
+        output = full_sim(run = i)

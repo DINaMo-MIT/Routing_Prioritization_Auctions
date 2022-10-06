@@ -5,11 +5,12 @@ from grid_cap import *
 
 def create_random(num_agents = 1, radius = 1, iters = 10, seed = None, operator_flag = False):
     """
-    Creates a grid, list of agents, and the schedule in which they deploy
+    Creates a grid, list of agents, and the schedule in which they deploy - all uniform random
     Inputs:
         radius: size of grid
         iters: iterations planned
         seed: seed for random number generator
+        operatro_flag: generate 3 opearators
     Outputs: (grid, agents, schedule)
         grid: the map we're operating on
         agents: list of all agents that will join the system during the sim
@@ -50,7 +51,16 @@ def create_random(num_agents = 1, radius = 1, iters = 10, seed = None, operator_
     
 def create_bimodal(num_agents = 62, radius = 1, time = 50, seed = None, operator_flag=False):
     """
-    
+        Creates a grid, list of agents, and the schedule in which they deploy - bimodal distribution schedule only
+    Inputs:
+        radius: size of grid
+        iters: iterations planned
+        seed: seed for random number generator
+        operatro_flag: generate 3 opearators
+    Outputs: (grid, agents, schedule)
+        grid: the map we're operating on
+        agents: list of all agents that will join the system during the sim
+        schedule: time at which agents depart and join system
     """
     rand = np.random.default_rng(seed)
     grid = GridCapacity(radius)
@@ -59,7 +69,7 @@ def create_bimodal(num_agents = 62, radius = 1, time = 50, seed = None, operator
     weights_loc = weights_loc / np.sum(weights_loc)
     
     x = np.linspace(0, time)
-    weights_t = norm.pdf(x, 40, 5) + norm.pdf(x, 20, 8)
+    weights_t = norm.pdf(x, 40, 5) + norm.pdf(x, 20, 8)     # Bimodal time dsitribution
     weights_t = weights_t / np.sum(weights_t)
     
     agents = []
@@ -115,7 +125,7 @@ def create_connected(radius = 1, iters = 10, seed = None):
     for i in range(1, radius-1):
         
         init_time = 0
-        var_cost = 2
+        var_cost = i
         ag = Agent(Hex(i, -i, 0), Hex(0, 0, 0), var_cost, init_time)
         agents.append(ag)
         
@@ -125,7 +135,7 @@ def create_connected(radius = 1, iters = 10, seed = None):
     for i in range(1, radius-1):
         
         init_time = 0
-        var_cost = 2
+        var_cost = i + 1
         ag = Agent(Hex(i, -i, 0), Hex(0, 0, 0), var_cost, init_time)
         agents.append(ag)
         
@@ -137,7 +147,7 @@ def create_connected(radius = 1, iters = 10, seed = None):
     for i in range(1, radius-1):
         
         init_time = 0
-        var_cost = 2
+        var_cost = i + 3
         ag = Agent(Hex(i, 0, -i), Hex(0, 0, 0), var_cost, init_time)
         agents.append(ag)
         
@@ -176,7 +186,7 @@ def create_cycle_testing_cap(radius = 3, iters = 10, seed=None):
 
 def create_hubspoke(num_agents = [50, 50, 50], radius = 7, seed = None):
     """
-    Create a hub and spoke scenario, with 3 operators each owning two positions
+    Create a hub and spoke scenario, with 6 operators each owning two positions
     Poisson distribution of launch? - mean 2
     """
     # set up grid
@@ -222,7 +232,7 @@ def create_hubspoke(num_agents = [50, 50, 50], radius = 7, seed = None):
 
 def create_crossing(num_agents = [50, 50, 50], radius = 7, time = 50, points = 3, seed = None):
     """
-    Create a crossing setup, where two operators are crossing over. Encode number of agents in size
+    Create a crossing setup, where three operators are crossing over. Encode number of agents in size
     """
     # set up grid
     rand = np.random.default_rng(seed)

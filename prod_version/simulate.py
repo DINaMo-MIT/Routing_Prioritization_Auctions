@@ -8,23 +8,24 @@ def simulate(grid, agents, schedule, prior = None, iters = 1e4, seed = 0, vis = 
         grid: Grid
         agents: list of Agents
         schedule: dictionary of {time: [Agents]}, when each agent starts up
-        *****
-        priority: string, type of priority method grid uses, default None -> random
+        ***** optional
+        prior: string, type of priority method grid uses, default None -> random - ['random', 'roundrobin', 'backpressure', 'secondprice', 'secondback']
         iters: int of iterations, optional
         seed: int for RNG, optional
         vis: bool for visualization, optional
         debug: bool for text debugging, optional
+        output: bool for printing output, optional
     Returns:
-        revenue:
-        delay:
-        std delay:
-        num_conflicts
-        pay costs:
-        wait costs:
-        weighted std delay:
-        normalized pay costs:
-        normalized wait costs:
-        operator counts:
+        revenue: Total grid revenue
+        delay: Total delay across all flights
+        std delay:  Standard deviation of delay across all flights
+        num_conflicts: Number of conflicts experienced
+        pay costs: Amount paid total by all flights
+        wait costs: Cost of waiting total by all flights
+        weighted std delay: Standard deviation of delay normalized by cost
+        normalized pay costs: Amount paid total by all flights normalized by cost
+        normalized wait costs: Cost of waiting total by all flights normalized by cost
+        operator counts: 
         operator raw delay:
         operator weighted delay:
     """
@@ -65,7 +66,7 @@ def simulate(grid, agents, schedule, prior = None, iters = 1e4, seed = 0, vis = 
         # check if all agents are in, which would indicate END ****
         if all([x.finished for x in agents]): break
         
-            
+        # retain only acitve agents
         active = [ag for ag in active if not ag.finished]
         if time in schedule.keys(): active += schedule[time]
         

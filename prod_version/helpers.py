@@ -209,7 +209,7 @@ def plot_locations_2(layout, coords, active, radius = 5):
         if ag.finished: text += "*"
         locations[ag.loc].append(text)
 
-    fig, ax = plt.subplots(1, dpi=radius * 25, figsize=(radius*3, radius*3))
+    fig, ax = plt.subplots(1, dpi=radius * 25) # figsize=(radius*3, radius*3))
     # ax.set(xlim=(-7, 7), ylim=(-7,7))
 
     # draw basic grid first
