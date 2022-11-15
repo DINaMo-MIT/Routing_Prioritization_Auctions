@@ -123,6 +123,15 @@ class GridCapacity(Grid):
                             
                             # remove the win_id from chains_sort
                             chains_sort = [c for c in chains_sort if c["chain"][-1] != win_id]
+                            moves_id = [m[0] for m in moves]
+                            # update each chain by taking out moved flights
+                            #[{chain: [_id, ...], prices: [int, ...], total: int}, ...]
+                            for chain in chains_sort:
+                                for k in range(len(chain['chain'])):
+                                    if chain['chain'][k] in moves_id:
+                                        chain['total'] -= chain['price'][k]
+                            chains_sort = sorted(chains_sort, key=lambda c: (c["total"], self._roundrobin[c["chain"][-1]]), reverse=True)
+
                         else: 
                             win, win_id, price = self.random_prioritization(undecided)   # PRIORITIZATION using random prioritization
                             undecided.pop(win)
@@ -309,7 +318,7 @@ class GridCapacity(Grid):
         return win_index, win_id, price, commands
 
     
-    def secondback_helper(self, requests, locations, commands, cycle_ids, req_loc):
+    def secondback_helper(self, requests, locations, commands, cycle_ids, req_loc, temp_chain=[]):
         """
         Recursion that actually calculates backpressure
         Works by iterating through id requesting in req_loc and tracing all chains leading to that id
@@ -328,8 +337,15 @@ class GridCapacity(Grid):
             chains.append({'chain': [], 'price': [], 'total': 0})
             return chains
 
+        # if you loop on yourself, return 0 at this level
+        if req_loc in temp_chain:
+            chains.append({'chain': [], 'price': [], 'total': 0})
+            return chains
+
+
         # recursion call - add every _id requesting to you to the list of chains given by location[_id]
         temp_tracking = {}      # temporary chain tracking of {loc: chains}, so that we don't redo recursion if a loc shows up again
+        temp_chain.append(req_loc)
         for _id, price in requests[req_loc]:
 
             # check not in cycles and already moved
@@ -338,6 +354,7 @@ class GridCapacity(Grid):
             if _id in cycle_ids or locations[_id] == req_loc or commands[_id][1] > -1: 
                 continue
             
+
             # get the next location
             prev_loc = locations[_id]
 
@@ -346,7 +363,7 @@ class GridCapacity(Grid):
                 if prev_loc == -1:
                     temp_tracking[prev_loc] = [{'chain': [], 'price': [], 'total': 0}]
                 else:
-                    temp_tracking[prev_loc] = self.secondback_helper(requests, locations, commands, cycle_ids, prev_loc)
+                    temp_tracking[prev_loc] = self.secondback_helper(requests, locations, commands, cycle_ids, prev_loc, temp_chain)
             
             # pull out chains on that location and check
             for chain in temp_tracking[prev_loc]:
@@ -361,6 +378,7 @@ class GridCapacity(Grid):
                 # add the altered chain to chains
                 chains.append(temp)
 
+        temp_chain.pop()
         # base case - if there's no chain, everyone requesting is cycled
         if len(chains) == 0:
             chains.append({'chain': [], 'price': [], 'total': 0})
@@ -427,6 +445,18 @@ class GridCapacity(Grid):
             cut = incoming[0].index(req_loc)    # cut out the loop itself, ignore the other pieces - consider try/except for runtime improvement
             return incoming[1][cut:]
 
+        # cycles must 1. have req_loc filled to capacity, 2. all agents point to same place
+        if len(sectors[req_loc]) != CAPACITY:
+            return []
+        
+        important_loc = None
+        for _id in sectors[req_loc]:
+            next_loc = bids[_id][0]     # pulling out the next location
+            if important_loc is None:
+                important_loc = next_loc
+            elif important_loc != next_loc:
+                return []
+
         # recursive: run backward until you find yourself
         pressures = [] 
         for _id in sectors[req_loc]:        # CONSIDER - sort this by price, move highest value first in cycle
@@ -435,8 +465,7 @@ class GridCapacity(Grid):
             incoming[0].append(req_loc)        # add to chain - PRIORITIZATION IS RANDOM rn
             incoming[1].append(_id)        
 
-            next_loc = bids[_id][0]     # pulling out the next location
-            pressures += self.find_cycles(next_loc, sectors, bids, scanned, incoming)
+            pressures += self.find_cycles(important_loc, sectors, bids, scanned, incoming)
 
             if len(pressures) > 0:      # if cycle found len(pressures) > 0, all ids record as scanned
                 for _id in pressures:
@@ -493,6 +522,10 @@ class GridCapacity(Grid):
             backpressures[req_loc] = 0
             return 0
 
+        # if you loop on yourself, return 0 at this level
+        if req_loc in backpressures:
+            return 0
+
         pressures = [0]     # default pressure 0
         for _id, price in requests[req_loc]:        
 
@@ -500,10 +533,11 @@ class GridCapacity(Grid):
             if cur_loc == -1: continue      # if the next location is ground skip recursion
 
             if _id in cycle_ids: continue       # check if _id is in a cycle - skip if so
-            if _id in backpressures:        # check if this _id's has a backpressure associated
-                pressures.append(backpressures[_id])
+            if cur_loc in backpressures and backpressures[cur_loc] != None:        # check if this _id's has a backpressure associated
+                pressures.append(backpressures[cur_loc])
                 continue
-
+            
+            backpressures[req_loc] = None
             # jump to that location - recursion
             pressures.append(self.track_backpressure(requests, locations, cycle_ids, backpressures, cur_loc))
         

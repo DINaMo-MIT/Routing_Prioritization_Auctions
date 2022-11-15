@@ -174,10 +174,15 @@ def create_cycle_testing_cap(radius = 3, iters = 10, seed=None):
         Agent(Hex(0, 0, 0), Hex(0, 1, -1), 1, 0), 
         Agent(Hex(0, 1, -1), Hex(1, 0, -1), 1, 0),
 
+        # Agent(Hex(1, 0, -1), Hex(0, 0, 0), 1, 0),     
+        # Agent(Hex(0, 0, 0), Hex(0, 1, -1), 1, 0), 
+        # Agent(Hex(0, 1, -1), Hex(1, 0, -1), 1, 0),
+
         # comment out bottom for 1 cycle only, capacity 1
-        Agent(Hex(1, 0, -1), Hex(1, 1, -2), 1, 0), 
-        Agent(Hex(1, 1, -2), Hex(0, 1, -1), 1, 0),
-        Agent(Hex(0, 1, -1), Hex(1, 0, -1), 1, 0) 
+        # Agent(Hex(1, 0, -1), Hex(1, 1, -2), 1, 0), 
+        # Agent(Hex(1, 1, -2), Hex(0, 1, -1), 1, 0),
+        # Agent(Hex(0, 1, -1), Hex(1, 0, -1), 1, 0),
+
     ]
     schedule[0] = agents
 
