@@ -9,9 +9,9 @@ from simulate import *
 # grid, agents, schedule = create_connected(radius = 3)
 # grid size = sum(1 to n) * 6 + 1
 # grid, agents, schedule = create_random(num_agents=50, radius = 2, seed = 10)          # small random scenario
-# grid, agents, schedule = create_random(num_agents=256, radius=7, iters=50, seed=12)     # random scenario
+grid, agents, schedule = create_random(num_agents=256, radius=7, iters=50, seed=12)     # random scenario
 # grid, agents, schedule = create_cycle_testing_cap()                                   # cycle testing
-grid, agents, schedule = create_connected(radius=4)                                   # connected chain of flights
+# grid, agents, schedule = create_connected(radius=4)                                   # connected chain of flights
 # grid, agents, schedule = create_bimodal(num_agents = 62, time = 50, radius = 3, operator_flag = True)
 # grid, agents, schedule = create_crossing(num_agents = [40,60], radius = 7, time = 50, points = 4)
 # grid, agents, schedule = create_hubspoke(num_agents = [25, 25, 25, 25, 25, 25], radius = 7, seed = None)

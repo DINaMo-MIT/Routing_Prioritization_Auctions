@@ -121,31 +121,30 @@ class GridCapacity(Grid):
                             win, win_id, price, moves = self.secondback_prioritization(undecided, chains_sort)
                             undecided.pop(win)
                             
-                            # remove the win_id from chains_sort
+                            # remove the win_id from chains_sort - win_id already passied in, don't deal w/ it
                             chains_sort = [c for c in chains_sort if c["chain"][-1] != win_id]
-                            moves_id = [m[0] for m in moves]
+                            
                             # update each chain by taking out moved flights
-                            #[{chain: [_id, ...], prices: [int, ...], total: int}, ...]
+                            moves_id = [m[0] for m in moves]
                             for chain in chains_sort:
-                                for k in range(len(chain['chain'])):
+                                for k in range(len(chain['chain'])-1, -1, -1):
                                     if chain['chain'][k] in moves_id:
                                         chain['total'] -= chain['price'][k]
+                                        chain['chain'].pop(k)
+                                        chain['price'].pop(k)
                             chains_sort = sorted(chains_sort, key=lambda c: (c["total"], self._roundrobin[c["chain"][-1]]), reverse=True)
-
                         else: 
                             win, win_id, price = self.random_prioritization(undecided)   # PRIORITIZATION using random prioritization
                             undecided.pop(win)
-                            
+        
                         # put out the commands
                         if self._priority == "secondback":
                             for _id, price in moves:
                                 commands[_id] = (bids[_id][0], price)       
                         else:
                             commands[win_id] = (bids[win_id][0], price)
-
                         self._revenue += price
                         decided.append((win_id, price))
-                        # assert 1 == 0
                         
             # end dealing with the sector - mark undecided as hold
             for (_id, price) in undecided:
