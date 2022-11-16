@@ -9,7 +9,10 @@ def simulate(grid, agents, schedule, prior = None, iters = 1e4, seed = 0, vis = 
         agents: list of Agents
         schedule: dictionary of {time: [Agents]}, when each agent starts up
         ***** optional
-        prior: string, type of priority method grid uses, default None -> random - ['random', 'roundrobin', 'backpressure', 'secondprice', 'secondback']
+        prior: string, type of priority method grid uses, 
+            default None -> random - ['random', 'roundrobin', 
+            'backpressure', 'accrueddelay',
+            'secondprice', 'secondback']
         iters: int of iterations, optional
         seed: int for RNG, optional
         vis: bool for visualization, optional
@@ -45,6 +48,7 @@ def simulate(grid, agents, schedule, prior = None, iters = 1e4, seed = 0, vis = 
     layout = Layout(layout_pointy, Point(1, 1), Point(0, 0))
     
     while time <= iters:
+        print("Time: ", time)
 
         if vis or debug: print("Time: ", time)
         
@@ -66,7 +70,7 @@ def simulate(grid, agents, schedule, prior = None, iters = 1e4, seed = 0, vis = 
         # check if all agents are in, which would indicate END ****
         if all([x.finished for x in agents]): break
         
-        # retain only acitve agents
+        # retain only active agents
         active = [ag for ag in active if not ag.finished]
         if time in schedule.keys(): active += schedule[time]
         
@@ -79,9 +83,13 @@ def simulate(grid, agents, schedule, prior = None, iters = 1e4, seed = 0, vis = 
             # bids.append(ag.bid)
             locs[_id] = ag.loc
 
-            
+        # get accrued delays
+        accrued_delays = {}
+        for ag in active:
+            accrued_delays[ag._id] = ag._accrued_delay
+
         # Run the step simulation
-        commands = grid.step_sim(locs, bids)
+        commands = grid.step_sim(locs, bids, active)
         if debug:
             print("Bids: ", bids)
             print("Commands: ", commands)

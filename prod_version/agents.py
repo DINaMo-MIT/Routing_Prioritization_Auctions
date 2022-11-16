@@ -24,6 +24,7 @@ class Agent():
         self._index = 0
         self._pay_costs = 0
         self._wait_costs = 0
+        self._accrued_delay = 0
         
         self._origin = origin
         self._dest = dest
@@ -97,7 +98,23 @@ class Agent():
             out: tuple of (pay_costs, wait_costs)
         """
         return (self._pay_costs, self._wait_costs)
-    
+
+    @property
+    def accrued_delay(self):
+        """
+        Return delay accrued by agent so far
+        Returns:
+            out: int of delay (in number of time steps)
+        """
+        return self._accrued_delay
+
+    @accrued_delay.setter
+    def accrued_delay(self, new_accrued_delay):
+        if new_accrued_delay > 0 and isinstance(new_accrued_delay, int):
+            self._accrued_delay = new_accrued_delay
+        else:
+            print("Accrued delay must be an int")
+
     def move(self, command):
         """
         Move the bot

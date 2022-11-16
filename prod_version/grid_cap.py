@@ -20,12 +20,13 @@ class GridCapacity(Grid):
     """
     
         
-    def step_sim(self, locations, bids):
+    def step_sim(self, locations, bids, active):
         """
         Step through one step of Chris's protocol - this handles cycles on until hold/motion (lines 4 to 24 in Alg 1)
         Inputs:
             locations: {id : loc} all active agent locations (if you're trying to depart also active)
             bids: {id : (next_loc, price)} all active agent bids
+            active: list of active agents (added to calculate accrued delay)
         Returns:
             commands: dictionary of tuples {id : (next loc, winning price)} of size (# agents) (None, 0) means hold
         """
@@ -114,6 +115,12 @@ class GridCapacity(Grid):
                         elif self._priority == "backpressure": 
                             win, win_id, price = self.backpressure_prioritization(undecided, locations, pressures)
                             undecided.pop(win)
+                        elif self._priority == 'accrueddelay':
+                            win, win_id, price = self.accrueddelay_prioritization(undecided, active)
+                            undecided.pop(win)
+                        elif self._priority == 'reversals':
+                            win, win_id, price = self.reversals_prioritization(undecided)
+                            undecided.pop(win)
                         elif self._priority == "secondprice" :
                             win, win_id, price = self.secondprice_prioritization(undecided)
                             undecided.pop(win)
@@ -151,6 +158,13 @@ class GridCapacity(Grid):
                 commands[_id] = (None, 0)
                 # self._roundrobin[_id] += 1
                 if locations[_id] in requests: requests[locations[_id]].append((_id, price))
+                
+                # increment accrued delay of held agents by 1
+                # if self._priority == 'accrueddelay' and len(undecided) > 0:
+                #     for (ag_id, _) in undecided:
+                if self._priority == 'accrueddelay':
+                    ag_index = [x._id for x in active].index(_id)
+                    active[ag_index].accrued_delay += 1
 
         # round robin updates
         for _id, (loc, price) in commands.items():
@@ -254,6 +268,43 @@ class GridCapacity(Grid):
         (win_id, price) = undecided[high_index]
                                                                             
         return high_index, win_id, price
+
+    def accrueddelay_prioritization(self, undecided, active):
+        """
+        Using accrued delay to resolve conflicts
+        Inputs:
+            undecided: list of tuples (index, price) of undecided flights
+        Returns:
+            high_index: integer of an index in undecided
+            win_id: id of winning agent
+            price: price the agent pays
+        """
+        high_ad = 0
+        high_index = 0
+
+        for i, (id, price) in enumerate(undecided):
+            update = False
+            ag = [x for x in active if x._id == id][0]
+
+            # if accrued delay is higher than high_ad, update
+            if ag.accrued_delay > high_ad:
+                update = True
+            # if accrued delay is equal to high_ad, use roundrobin as tiebreaker
+            elif ag.accrued_delay == high_ad:
+                temp = [undecided[high_index], (id, price)]        # [current high, new high]
+                index, _, _ = self.roundrobin_prioritization(temp)
+                if index == 1:      # default is first instance goes
+                    update = True
+
+            # update high_ad and high_index
+            if update:
+                high_ad = ag.accrued_delay
+                high_index = i
+
+        (win_id, price) = undecided[high_index]
+                                                                            
+        return high_index, win_id, price
+
     
     def secondprice_prioritization(self, undecided):
         """

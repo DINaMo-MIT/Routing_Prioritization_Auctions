@@ -23,8 +23,10 @@ for i, ag in enumerate(agents):
         print("Origin \t", ag._origin, "\t Destination \t", ag._dest)
         print("Departure \t", ag._depart_t, "\t Sched.  Arrival \t", ag._schedule_t)
 
+rev, delay, std_delay, _, _, _, _, _, _, _, _, _ = simulate(grid, agents, schedule, vis= False, prior="accrueddelay", output=True, debug=False)
+# rev, delay, std_delay, _, _, _, _, _, _, _, _, _ = simulate(grid, agents, schedule, vis= False, prior="backpressure", output=True, debug=False)
 
-rev, delay, std_delay, _, _, _, _, _, _, _, _, _ = simulate(grid, agents, schedule, vis= True, prior="secondback", output=True, debug=False)
+# rev, delay, std_delay, _, _, _, _, _, _, _, _, _ = simulate(grid, agents, schedule, vis= True, prior="secondback", output=True, debug=False)
 
 
 # try case of just a large cycle - only one cycle test case

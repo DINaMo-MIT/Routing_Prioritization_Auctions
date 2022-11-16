@@ -254,7 +254,7 @@ def plot_locations_2(layout, coords, active, radius = 5):
         for ag_text in text:
             output += ag_text + ","
 
-        ax.text(x, y, output[:-1], ha='center', va='center', fontsize="medium")
+        ax.text(x, y, output[:-1], ha='center', va='center', fontsize=6)
     
     ax.set_aspect('equal')
     ax.autoscale()

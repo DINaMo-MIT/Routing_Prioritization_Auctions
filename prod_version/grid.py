@@ -56,7 +56,7 @@ class Grid():
         Inputs:
             method: string of type of prioritization
         """
-        assert method in ["random", "roundrobin", "backpressure", "secondprice", "secondback"]
+        assert method in ["random", "roundrobin", "backpressure", "accrueddelay", "reversals","secondprice", "secondback"]
         self._priority = method
         
     def step_sim(self, locations, bids):
@@ -65,6 +65,7 @@ class Grid():
         Inputs:
             locations: {id : loc} all active agent locations (if you're trying to depart also active)
             bids: {id : (next_loc, price)} all active agent bids
+            
         Returns:
             commands: dictionary of tuples {id : (next loc, winning price)} of size (# agents) (None, 0) means hold
         """
