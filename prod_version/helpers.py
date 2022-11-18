@@ -14,7 +14,7 @@ import matplotlib.lines as lines
 import seaborn as sns
 
 # Define constants
-CAPACITY = 2
+CAPACITY = 1
 
 ## Hex stuff
 

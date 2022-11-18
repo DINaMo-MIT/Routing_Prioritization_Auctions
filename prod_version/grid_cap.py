@@ -117,10 +117,14 @@ class GridCapacity(Grid):
                             win, win_id, price = self.backpressure_prioritization(undecided, locations, pressures)
                             undecided.pop(win)
                         elif self._priority == 'accrueddelay':
-                            win, win_id, price = self.accrueddelay_prioritization(undecided, active)
+                            tiebreak, win, win_id, price = self.accrueddelay_prioritization(undecided, active)
+                            if tiebreak:
+                                win, win_id, price = self.backpressure_prioritization(undecided, locations, pressures)
                             undecided.pop(win)
                         elif self._priority == 'reversals':
-                            win, win_id, price, reversed = self.reversals_prioritization(undecided, active, reversed, loc)
+                            tiebreak, win, win_id, price = self.reversals_prioritization(undecided, active)
+                            if tiebreak:
+                                win, win_id, price = self.backpressure_prioritization(undecided, locations, pressures)
                             undecided.pop(win)
                         elif self._priority == "secondprice" :
                             win, win_id, price = self.secondprice_prioritization(undecided)
@@ -145,6 +149,10 @@ class GridCapacity(Grid):
                             win, win_id, price = self.random_prioritization(undecided)   # PRIORITIZATION using random prioritization
                             undecided.pop(win)
         
+                        if loc == Hex(1,-1,0):
+                            pass
+                        reversed = self.update_reversed(active, win_id, undecided, loc, reversed)
+
                         # put out the commands
                         if self._priority == "secondback":
                             for _id, price in moves:
@@ -153,7 +161,7 @@ class GridCapacity(Grid):
                             commands[win_id] = (bids[win_id][0], price)
                         self._revenue += price
                         decided.append((win_id, price))
-                        
+
             # end dealing with the sector - mark undecided as hold
             for (_id, price) in undecided:
                 commands[_id] = (None, 0)
@@ -163,15 +171,13 @@ class GridCapacity(Grid):
                 # increment accrued delay of held agents by 1
                 # if self._priority == 'accrueddelay' and len(undecided) > 0:
                 #     for (ag_id, _) in undecided:
-                if self._priority == 'accrueddelay':
-                    ag_index = [x._id for x in active].index(_id)
-                    active[ag_index].accrued_delay += 1
+                ag_index = [x._id for x in active].index(_id)
+                active[ag_index].accrued_delay += 1
 
                 # increment reversals of agents in reversed *and* undecided by 1
-                if self._priority == 'reversals':
-                    if _id in reversed:     # vehicle in reversed (list of agents that might've experienced reversal)
-                        ag_index = [x._id for x in active].index(_id)
-                        active[ag_index].reversals += 1
+                if _id in reversed:     # vehicle in reversed (list of agents that might've experienced reversal)
+                    ag_index = [x._id for x in active].index(_id)
+                    active[ag_index].reversals += 1
 
         # round robin updates
         records = {}
@@ -271,11 +277,6 @@ class GridCapacity(Grid):
             # check backpressure, tiebreak roundrobin
             if back_press > high_press:
                 update = True
-            elif back_press == high_press:
-                temp = [undecided[high_index], (_id, price)]        # [current high, new high]
-                index, _, _ = self.roundrobin_prioritization(temp)
-                if index == 1:      # default is first instance goes
-                    update = True
 
             # update step
             if update:
@@ -299,6 +300,7 @@ class GridCapacity(Grid):
         """
         high_ad = 0
         high_index = 0
+        tiebreak = True     # at first, this is true
 
         for i, (id, price) in enumerate(undecided):
             update = False
@@ -307,12 +309,7 @@ class GridCapacity(Grid):
             # if accrued delay is higher than high_ad, update
             if ag.accrued_delay > high_ad:
                 update = True
-            # if accrued delay is equal to high_ad, use roundrobin as tiebreaker
-            elif ag.accrued_delay == high_ad:
-                temp = [undecided[high_index], (id, price)]        # [current high, new high]
-                index, _, _ = self.roundrobin_prioritization(temp)
-                if index == 1:      # default is first instance goes
-                    update = True
+                tiebreak = False
 
             # update high_ad and high_index
             if update:
@@ -321,10 +318,10 @@ class GridCapacity(Grid):
 
         (win_id, price) = undecided[high_index]
                                                                             
-        return high_index, win_id, price
+        return tiebreak, high_index, win_id, price
 
 
-    def reversals_prioritization(self, undecided, active, reversed, loc):
+    def reversals_prioritization(self, undecided, active):
         """
         Using reversals to resolve conflicts
         Inputs:
@@ -338,6 +335,7 @@ class GridCapacity(Grid):
         """
         high_rev = 0
         high_index = 0
+        tiebreak = True     # at first, this is true
 
         for i, (id, price) in enumerate(undecided):
             update = False
@@ -346,12 +344,7 @@ class GridCapacity(Grid):
             # if accrued delay is higher than high_rev, update
             if ag.reversals > high_rev:
                 update = True
-            # if accrued delay is equal to high_rev, use roundrobin as tiebreaker
-            elif ag.reversals == high_rev:
-                temp = [undecided[high_index], (id, price)]        # [current high, new high]
-                index, _, _ = self.roundrobin_prioritization(temp)
-                if index == 1:      # default is first instance goes
-                    update = True
+                tiebreak = False
 
             # update high_rev and high_index
             if update:
@@ -360,9 +353,9 @@ class GridCapacity(Grid):
 
         (win_id, price) = undecided[high_index]
 
-        reversed = self.update_reversed(active, win_id, undecided, loc, reversed)
+        # reversed = self.update_reversed(active, win_id, undecided, loc, reversed)
                                                                             
-        return high_index, win_id, price, reversed
+        return tiebreak, high_index, win_id, price
 
     def update_reversed(self, active, win_id, undecided, loc, reversed):
         # find scheduled arrival time at this sector for win_id
