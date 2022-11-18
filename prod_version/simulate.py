@@ -83,11 +83,6 @@ def simulate(grid, agents, schedule, prior = None, iters = 1e4, seed = 0, vis = 
             # bids.append(ag.bid)
             locs[_id] = ag.loc
 
-        # get accrued delays
-        accrued_delays = {}
-        for ag in active:
-            accrued_delays[ag._id] = ag._accrued_delay
-
         # Run the step simulation
         commands = grid.step_sim(locs, bids, active)
         if debug:
@@ -109,6 +104,7 @@ def simulate(grid, agents, schedule, prior = None, iters = 1e4, seed = 0, vis = 
     delays_weighted = []
     agent_waits = []
     agent_waits_norm = []
+    reversals = []
 
     # Operator questions
     operator_delay = {}
@@ -126,6 +122,7 @@ def simulate(grid, agents, schedule, prior = None, iters = 1e4, seed = 0, vis = 
         delays_weighted.append((ag._arrival_t - ag._schedule_t) * ag._var_cost)
         agent_waits.append(np.array(ag.costs))
         agent_waits_norm.append(np.array(ag.costs) / ag._var_cost)
+        reversals.append(ag._reversals)
 
         if operate:
             if ag.operator not in operator_delay.keys():
@@ -145,6 +142,7 @@ def simulate(grid, agents, schedule, prior = None, iters = 1e4, seed = 0, vis = 
         print("Total Conflicts: ", grid.num_conflicts)
         print("Total Delay: ", np.sum(delays))
         print("Std Dev Delay: ", np.std(delays))
+        print("Reversals: ", np.sum(reversals))
         print("Total Pay Costs: ", np.sum(agent_waits[:, 0]))
         print("Total Wait Costs: ", np.sum(agent_waits[:, 1]))
         
@@ -155,6 +153,10 @@ def simulate(grid, agents, schedule, prior = None, iters = 1e4, seed = 0, vis = 
     
         if operate:
             for op in operator_delay.keys():
-                print("Operator ", op, "# agents ", operator_counts[op], "raw delay ", operator_delay[op], "weighted delay ", operator_delay_waits[op])
+                print("Operator ", op, "# agents ", operator_counts[op], "raw delay ", 
+                operator_delay[op], "weighted delay ", operator_delay_waits[op])
 
-    return grid.revenue, np.sum(delays), np.std(delays), grid.num_conflicts, np.sum(agent_waits[:, 0]), np.sum(agent_waits[:, 1]), np.std(delays_weighted), np.sum(agent_waits_norm[:, 0]), np.sum(agent_waits_norm[:, 1]), operator_counts, operator_delay, operator_delay_waits
+    return grid.revenue, np.sum(delays), np.std(delays), grid.num_conflicts, \
+        np.sum(agent_waits[:, 0]), np.sum(agent_waits[:, 1]), np.std(delays_weighted), \
+        np.sum(agent_waits_norm[:, 0]), np.sum(agent_waits_norm[:, 1]), \
+        operator_counts, operator_delay, operator_delay_waits

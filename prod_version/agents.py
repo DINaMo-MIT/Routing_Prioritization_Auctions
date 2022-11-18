@@ -25,6 +25,7 @@ class Agent():
         self._pay_costs = 0
         self._wait_costs = 0
         self._accrued_delay = 0
+        self._reversals = 0
         
         self._origin = origin
         self._dest = dest
@@ -32,6 +33,10 @@ class Agent():
         # departure and arrival times
         self._depart_t = depart_t
         self._schedule_t = depart_t + len(self._steps)
+
+        # last time in schedule_t_steps should equal schedule_t
+        self._schedule_t_steps = [depart_t + 1 + x for x in range(len(self._steps))]    
+        assert self._schedule_t_steps[-1] == self._schedule_t
         self._arrival_t = None
         
         self._id = uuid.uuid4()
@@ -114,6 +119,22 @@ class Agent():
             self._accrued_delay = new_accrued_delay
         else:
             print("Accrued delay must be an int")
+
+    @property
+    def reversals(self):
+        """
+        Return delay accrued by agent so far
+        Returns:
+            out: int of delay (in number of time steps)
+        """
+        return self._reversals
+
+    @reversals.setter
+    def reversals(self, new_reversals):
+        if new_reversals > 0 and isinstance(new_reversals, int):
+            self._reversals = new_reversals
+        else:
+            print("Reversals must be an int")    
 
     def move(self, command):
         """

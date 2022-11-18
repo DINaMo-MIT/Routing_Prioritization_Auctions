@@ -69,6 +69,7 @@ class GridCapacity(Grid):
         # handling every sector now
         for loc in order:
             asks = requests[loc]
+            reversed = []       # list of agents that experienced reversal
             
             # create a list of (index, price of bid)
             undecided = []
@@ -119,7 +120,7 @@ class GridCapacity(Grid):
                             win, win_id, price = self.accrueddelay_prioritization(undecided, active)
                             undecided.pop(win)
                         elif self._priority == 'reversals':
-                            win, win_id, price = self.reversals_prioritization(undecided)
+                            win, win_id, price, reversed = self.reversals_prioritization(undecided, active, reversed, loc)
                             undecided.pop(win)
                         elif self._priority == "secondprice" :
                             win, win_id, price = self.secondprice_prioritization(undecided)
@@ -128,7 +129,7 @@ class GridCapacity(Grid):
                             win, win_id, price, moves = self.secondback_prioritization(undecided, chains_sort)
                             undecided.pop(win)
                             
-                            # remove the win_id from chains_sort - win_id already passied in, don't deal w/ it
+                            # remove the win_id from chains_sort - win_id already passed in, don't deal w/ it
                             chains_sort = [c for c in chains_sort if c["chain"][-1] != win_id]
                             
                             # update each chain by taking out moved flights
@@ -166,11 +167,27 @@ class GridCapacity(Grid):
                     ag_index = [x._id for x in active].index(_id)
                     active[ag_index].accrued_delay += 1
 
+                # increment reversals of agents in reversed *and* undecided by 1
+                if self._priority == 'reversals':
+                    if _id in reversed:     # vehicle in reversed (list of agents that might've experienced reversal)
+                        ag_index = [x._id for x in active].index(_id)
+                        active[ag_index].reversals += 1
+
         # round robin updates
+        records = {}
         for _id, (loc, price) in commands.items():
             assert price >= 0
             if loc == None: self._roundrobin[_id] += 1
             else: self._roundrobin[_id] = 0
+
+            temp = loc
+            if temp == None: temp = locations[_id]
+            if temp not in records: records[temp] = 0
+            records[temp] += 1
+        
+        for loc, val in records.items():
+            if loc != -1:
+                assert val <= CAPACITY, print(val, locations, "\n", bids, "\n", commands, "\n", loc)
 
         # print("locs", locations)
         # print("bids", bids)
@@ -274,6 +291,7 @@ class GridCapacity(Grid):
         Using accrued delay to resolve conflicts
         Inputs:
             undecided: list of tuples (index, price) of undecided flights
+            active: list of active agents
         Returns:
             high_index: integer of an index in undecided
             win_id: id of winning agent
@@ -304,6 +322,67 @@ class GridCapacity(Grid):
         (win_id, price) = undecided[high_index]
                                                                             
         return high_index, win_id, price
+
+
+    def reversals_prioritization(self, undecided, active, reversed, loc):
+        """
+        Using reversals to resolve conflicts
+        Inputs:
+            undecided: list of tuples (index, price) of undecided flights
+            active: list of active agents
+            reversed: list of agents that might have experienced schedule reversal
+        Returns:
+            high_index: integer of an index in undecided
+            win_id: id of winning agent
+            price: price the agent pays
+        """
+        high_rev = 0
+        high_index = 0
+
+        for i, (id, price) in enumerate(undecided):
+            update = False
+            ag = [x for x in active if x._id == id][0]
+
+            # if accrued delay is higher than high_rev, update
+            if ag.reversals > high_rev:
+                update = True
+            # if accrued delay is equal to high_rev, use roundrobin as tiebreaker
+            elif ag.reversals == high_rev:
+                temp = [undecided[high_index], (id, price)]        # [current high, new high]
+                index, _, _ = self.roundrobin_prioritization(temp)
+                if index == 1:      # default is first instance goes
+                    update = True
+
+            # update high_rev and high_index
+            if update:
+                high_rev = ag.reversals
+                high_index = i
+
+        (win_id, price) = undecided[high_index]
+
+        reversed = self.update_reversed(active, win_id, undecided, loc, reversed)
+                                                                            
+        return high_index, win_id, price, reversed
+
+    def update_reversed(self, active, win_id, undecided, loc, reversed):
+        # find scheduled arrival time at this sector for win_id
+        win_ag = [x for x in active if x._id == win_id][0]
+        win_schedule_t_step = win_ag._schedule_t_steps[win_ag._steps.index(loc)]
+
+        # update reversed list
+        for (this_id, _) in undecided:
+            if this_id == win_id:        # skip win_id
+                continue
+
+            # find scheduled arrival time at this sector for this_id
+            this_ag = [x for x in active if x._id == this_id][0]
+            this_schedule_t_step = this_ag._schedule_t_steps[this_ag._steps.index(loc)]
+
+            # record schedule reversal if this_id supposed to arrive before win_id
+            if this_schedule_t_step < win_schedule_t_step:
+                reversed.append(this_id)
+
+        return reversed
 
     
     def secondprice_prioritization(self, undecided):
