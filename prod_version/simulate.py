@@ -115,8 +115,8 @@ def simulate(grid, agents, schedule, prior = None, iters = 1e4, seed = 0, vis = 
     if agents[0].operator: operate = True
         # get costs and revenue
     for i, ag in enumerate(agents):
-        if output: 
-            print("Agent ", i, "operator ", ag.operator, " costed ", ag.costs, "finished", ag.finished, "departure, scheduled, arrived", ag._depart_t, ag._schedule_t, ag._arrival_t, "price", ag._var_cost)   # think of this as extra/delayed costs
+        # if output: 
+            # print("Agent ", i, "operator ", ag.operator, " costed ", ag.costs, "finished", ag.finished, "departure, scheduled, arrived", ag._depart_t, ag._schedule_t, ag._arrival_t, "price", ag._var_cost)   # think of this as extra/delayed costs
             
         delays.append(ag._arrival_t - ag._schedule_t)
         delays_weighted.append((ag._arrival_t - ag._schedule_t) * ag._var_cost)
@@ -149,7 +149,7 @@ def simulate(grid, agents, schedule, prior = None, iters = 1e4, seed = 0, vis = 
         print("Std Dev Normalized Delay: ", np.std(delays_weighted))
 
         print("Total Normalized Pay Costs: ", np.sum(agent_waits_norm[:, 0]))
-        print("Total Normalized Wait Costs: ", np.sum(agent_waits_norm[:, 1]))
+        print("Total Normalized Wait Costs: ", np.sum(agent_waits_norm[:, 1]), '\n')
     
         if operate:
             for op in operator_delay.keys():

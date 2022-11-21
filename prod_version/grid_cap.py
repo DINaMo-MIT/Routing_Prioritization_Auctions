@@ -278,6 +278,12 @@ class GridCapacity(Grid):
             if back_press > high_press:
                 update = True
 
+            # elif back_press == high_press:
+            #     temp = [undecided[high_index], (_id, price)]
+            #     index, _, _ = self.roundrobin_prioritization(temp)
+            #     if index == 1:      # default is first instance goes
+            #         update = True
+
             # update step
             if update:
                 high_press = back_press
