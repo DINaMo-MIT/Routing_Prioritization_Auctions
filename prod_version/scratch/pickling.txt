@@ -1,0 +1,3 @@
+import pickle
+outbound = {"bids":bids, "locations":locs, "active":active, "layout":layout}
+pickle.dump(outbound, open("./prod_version/t27_complex_failure_102.pkl", 'wb'))

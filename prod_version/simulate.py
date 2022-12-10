@@ -81,7 +81,7 @@ def simulate(grid, agents, schedule, prior = None, iters = 1e4, seed = 0, vis = 
 
             
         # Run the step simulation
-        commands = grid.step_sim(locs, bids)
+        commands = grid.step_sim(locs, bids, time=time)
         if debug:
             print("Bids: ", bids)
             print("Commands: ", commands)

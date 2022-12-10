@@ -173,6 +173,45 @@ def create_cycle_testing_cap(radius = 3, iters = 10, seed=None):
         Agent(Hex(1, 0, -1), Hex(0, 0, 0), 1, 0),     
         Agent(Hex(0, 0, 0), Hex(0, 1, -1), 1, 0), 
         Agent(Hex(0, 1, -1), Hex(1, 0, -1), 1, 0),
+ 
+
+        # Agent(Hex(1, 0, -1), Hex(0, 0, 0), 1, 0),     
+        # Agent(Hex(0, 0, 0), Hex(0, 1, -1), 1, 0), 
+        # Agent(Hex(0, 1, -1), Hex(1, 0, -1), 1, 0),
+
+        # comment out bottom for 1 cycle only, capacity 1
+        # Agent(Hex(1, 0, -1), Hex(1, 1, -2), 1, 0), 
+        # Agent(Hex(1, 1, -2), Hex(0, 1, -1), 1, 0),
+        # Agent(Hex(0, 1, -1), Hex(1, 0, -1), 1, 0),
+
+    ]
+    schedule[0] = agents
+
+    return grid, agents, schedule
+
+
+def create_backpressure_test(radius = 3, iters = 10, seed=None):
+    
+    """ASSUMES CAPACITY OF 2 TO TEST CYCLING"""
+
+    rand = np.random.default_rng(seed)
+    grid = GridCapacity(radius)
+
+    agents = []
+    schedule = {}
+
+    agents = [
+        Agent(Hex(1, 0, -1), Hex(0, 0, 0), 1, 0),     
+        Agent(Hex(0, 0, 0), Hex(1, 0, -1), 1, 0), 
+        Agent(Hex(0, 1, -1), Hex(1, 0, -1), 1, 0),
+
+        Agent(Hex(-1, 0, 1), Hex(0, 0, 0), 1, 0),    
+        Agent(Hex(-2, 0, 2), Hex(-1, 0, 1),  1, 0),
+        Agent(Hex(-2, 0, 2), Hex(-1, 0, 1),  1, 0),
+        Agent(Hex(-3, 0, 3), Hex(-1, 0, 1),  1, 0),
+
+
+        # Agent(Hex(0, 2, -2), Hex(0, 1, -1),  1, 0),
 
         # Agent(Hex(1, 0, -1), Hex(0, 0, 0), 1, 0),     
         # Agent(Hex(0, 0, 0), Hex(0, 1, -1), 1, 0), 
