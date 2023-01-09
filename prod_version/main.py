@@ -25,7 +25,7 @@ for i, ag in enumerate(agents):
 
 # rev, delay, std_delay, _, _, _, _, _, _, _, _, _ = simulate(grid, agents, schedule, vis= False, prior="reversals", output=True, debug=False)
 # rev, delay, std_delay, _, _, _, _, _, _, _, _, _ = simulate(grid, agents, schedule, vis= False, prior="accrueddelay", output=True, debug=False)
-rev, delay, std_delay, _, _, _, _, _, _, _, _, _ = simulate(grid, agents, schedule, vis= True, prior="backpressure", output=True, debug=False)
+rev, delay, std_delay, _, _, _, _, _, _, _, _, _ = simulate(grid, agents, schedule, vis= False, prior="backpressure", output=True, debug=False)
 
 # rev, delay, std_delay, _, _, _, _, _, _, _, _, _ = simulate(grid, agents, schedule, vis= False, prior="secondback", output=True, debug=False)
 
