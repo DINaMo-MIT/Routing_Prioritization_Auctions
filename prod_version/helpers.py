@@ -195,7 +195,15 @@ def plot_locations(layout, coords, active, radius = 5):
     ax.autoscale()
     plt.show()
 
-def plot_locations_2(layout, coords, active, radius = 5):
+def plot_multi_locations(layout, coords, active, radius = 5):
+    """
+    Plot locations, but with multi capacity 
+    Inputs:
+        layout: Layout object for grid visualization
+        coords: list of Hex, coordinates that exists on the grid
+        active: list of Agents, all agents active and to be plotted
+    Returns:
+    """
 
     agents = {}
     locations = {}
@@ -257,5 +265,104 @@ def plot_locations_2(layout, coords, active, radius = 5):
         ax.text(x, y, output[:-1], ha='center', va='center', fontsize=6)
     
     ax.set_aspect('equal')
+    ax.autoscale()
+    plt.show()
+
+def plot_locations_2(layout, coords, active, radius = 5):
+
+    return plot_multi_locations(layout, coords, active, radius = 5)
+
+
+def plot_special(layout, coords, active, radius = 5):
+    """
+    Plot locations for figure generation
+    Inputs:
+        layout: Layout object for grid visualization
+        coords: list of Hex, coordinates that exists on the grid
+        active: list of Agents, all agents active and to be plotted
+    Returns:
+    """
+    sns.set_theme(style="white")
+
+    agents = {}
+    locations = {}
+    for ag in active:
+        agents[ag._id] = (ag.loc, ag.finished, ag.bid[0])
+        
+        # build the text box
+        if ag.loc not in locations: locations[ag.loc] = []
+        text = str(ag._id)
+        # check if finished
+        if ag.finished: text += "*"
+        else: text += " \$" + str(ag.bid[1])
+        locations[ag.loc].append(text)
+
+    fig, ax = plt.subplots(1, dpi=radius * 25) # figsize=(radius*3, radius*3))
+    # ax.set(xlim=(-7, 7), ylim=(-7,7))
+
+    # draw basic grid first
+    for h in coords:
+
+        
+        # color
+        color = None
+        if h == Hex(0,0,0): color = 'Green'
+
+        x, y = hex_to_pixel(layout, h)
+        hex = RegularPolygon((x,y), numVertices=6, radius= 1, 
+                             orientation=np.radians(0), 
+                             facecolor= color, alpha=0.2, edgecolor='k')
+        ax.add_patch(hex)
+
+    # build cells for the relevant sectors
+    for _id, info in agents.items():
+        if info[0] == -1: continue
+
+        # set color - if done Green, else Red
+        if info[1]: color = "Green"
+        else: color = "Red"
+
+        # draw the hex
+        x, y = hex_to_pixel(layout, info[0])
+        hex = RegularPolygon((x,y), numVertices=6, radius= 1, 
+                             orientation=np.radians(0), 
+                             facecolor= color, alpha=0.3, edgecolor='k', zorder=5)
+        ax.add_patch(hex)
+
+        # draw the arrow
+        """ NOTE: want to improve this
+        set up arrows at start, hash by start/end of arrow, multiple of them should be split
+        or somehow set the names on the arrows"""
+        if info[2] is not None:
+            x_n, y_n = hex_to_pixel(layout, info[2])
+            dx = x_n - x
+            dy = y_n - y
+            arrow = Arrow(x + dx/4, y + dy/4, dx/2, dy/2, width=0.25, zorder=10)
+            ax.add_patch(arrow)
+    
+            # draw  text along the arrow, offset of arrow running along the arrow
+            if False:
+                dir = -np.sign(dx*dy)
+                ax.text(x + dx/2 + dir*np.abs(dy/8), y + dy/2 + np.abs(dx/8), str(_id), ha='center', va='center', fontsize=6, rotation=np.degrees(np.arctan2(np.sign(dx)*dy, np.sign(dx)*dx)))
+
+
+    # build the text box
+    for loc, text in locations.items():
+        if loc == -1: continue
+        x, y = hex_to_pixel(layout, loc)
+
+        output = ""
+        for ag_text in text:
+            output += ag_text + ","
+            print(output)
+
+            # if locations[h][1]: label = str(locations[h][0]) + ',*'
+            # else: label = str(locations[h][0]) + ',$' +  str(locations[h][3])
+
+
+        ax.text(x, y, output[:-1], ha='center', va='center', fontsize=10)
+    
+    ax.set_aspect('equal')
+    ax.axis('off')
     ax.autoscale()
     plt.show()
