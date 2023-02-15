@@ -68,7 +68,10 @@ class GridCapacity(Grid):
 
         # handling every sector now
         for loc in order:
-            asks = requests[loc]
+            # asks = requests[loc]
+            asks = sorted(requests[loc], key=lambda x: x[0], reverse=False)
+            if len(asks) >= 2:
+                assert 1 == 1
             reversed = []       # list of agents that experienced reversal
             
             # create a list of (index, price of bid)
@@ -127,7 +130,10 @@ class GridCapacity(Grid):
                                 win, win_id, price = self.backpressure_prioritization(undecided, locations, pressures)
                             undecided.pop(win)
                         elif self._priority == "secondprice" :
-                            win, win_id, price = self.secondprice_prioritization(undecided)
+                            tiebreak, ties, win, win_id, price = self.secondprice_prioritization(undecided)
+                            if tiebreak:
+                                win, win_id, price = self.backpressure_prioritization(ties, locations, pressures)
+                            assert win != None and win_id != None and price != None
                             undecided.pop(win)
                         elif self._priority == "secondback":
                             win, win_id, price, moves = self.secondback_prioritization(undecided, chains_sort)
@@ -179,13 +185,14 @@ class GridCapacity(Grid):
                     ag_index = [x._id for x in active].index(_id)
                     active[ag_index].reversals += 1
 
-        # round robin updates
+        # round robin updates - reset if they move
         records = {}
         for _id, (loc, price) in commands.items():
-            assert price >= 0
+            assert price >= 0   # assert everyone has been assigned an action, go or hold
             if loc == None: self._roundrobin[_id] += 1
             else: self._roundrobin[_id] = 0
 
+            # records for capacity check later
             temp = loc
             if temp == None: temp = locations[_id]
             if temp not in records: records[temp] = 0
@@ -246,7 +253,7 @@ class GridCapacity(Grid):
                 high_index = i
         
         # set highest wait to 0, b/c they're getting to move
-        self._roundrobin[undecided[high_index][0]] = 0
+        # self._roundrobin[undecided[high_index][0]] = 0
         (win_id, price) = undecided[high_index]
                                                                              
         return high_index, win_id, price
@@ -279,18 +286,37 @@ class GridCapacity(Grid):
             if back_press > high_press:
                 update = True
 
-            # elif back_press == high_press:
-            #     temp = [undecided[high_index], (_id, price)]
-            #     index, _, _ = self.roundrobin_prioritization(temp)
-            #     if index == 1:      # default is first instance goes
-            #         update = True
+            elif back_press == high_press and i > 0:
+                print('roundrobin tiebreak')
+                temp = [undecided[high_index], (_id, price)]
+                index, _, _ = self.roundrobin_prioritization(temp)
+                if index == 1:      # default is first instance goes
+                    update = True
 
             # update step
             if update:
-                high_press = back_press
+                high_press = back_press 
                 high_index = i
 
         (win_id, price) = undecided[high_index]
+
+        # tiebreaker checker w/ backpressure and roundrobin
+        if False:
+            for i, (_id, price) in enumerate(undecided):
+                if _id == win_id: pass
+                elif locations[_id] == -1 and locations[win_id] == -1:      # if _id and win_id are both -1, then check roundrobin then _id 
+                    assert (
+                        win_id < _id or
+                        self._roundrobin[win_id] > self._roundrobin[_id] 
+                    )
+                elif locations[_id] == -1 and locations[win_id] != -1:      # if _id is -1 and win_id is not, then win_id should win anyways
+                    pass
+                elif locations[_id] != -1 and locations[win_id] != -1:      # if _id and win_id are not -1, check pressures then roundrobin then  _id
+                    assert (
+                        pressures[locations[win_id]] > pressures[locations[_id]] or 
+                        self._roundrobin[win_id] > self._roundrobin[_id] or 
+                        win_id < _id
+                    )
                                                                             
         return high_index, win_id, price
 
@@ -397,6 +423,16 @@ class GridCapacity(Grid):
             price: price the agent pays
         """
         
+        print(undecided)
+
+        # check for ties, bounce out to backpressure if so
+        temp = deepcopy(sorted(undecided, key=lambda x: x[1], reverse=True))
+        temp = [x for x in temp if x[1] == temp[0][1]]
+        if len(temp) > 1:
+            return True, temp, None, None, None
+
+        print(undecided)
+
         # get high bid
         high_index, winner = max(enumerate(undecided), key=lambda x:x[1][1])
         # print(undecided)
@@ -409,7 +445,11 @@ class GridCapacity(Grid):
         if not new: price = 0
         else: price = max(new, key=lambda x: x[1])[1]
     
-        return high_index, winner[0], price
+        assert price >= 0
+        if winner[0] == 103:
+            assert True
+
+        return False, undecided, high_index, winner[0], price
 
     def secondback_prioritization(self, undecided, chains_sorted):
         """
