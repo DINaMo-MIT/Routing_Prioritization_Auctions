@@ -117,14 +117,14 @@ class GridCapacity(Grid):
                             win, win_id, price = self.backpressure_prioritization(undecided, locations, pressures)
                             undecided.pop(win)
                         elif self._priority == 'accrueddelay':
-                            tiebreak, win, win_id, price = self.accrueddelay_prioritization(undecided, active)
+                            tiebreak, win, win_id, price, undecided_with_max = self.accrueddelay_prioritization(undecided, active)
                             if tiebreak:
-                                win, win_id, price = self.backpressure_prioritization(undecided, locations, pressures)
+                                win, win_id, price = self.backpressure_prioritization(undecided, locations, pressures, undecided_with_max=undecided_with_max)
                             undecided.pop(win)
                         elif self._priority == 'reversals':
-                            tiebreak, win, win_id, price = self.reversals_prioritization(undecided, active)
+                            tiebreak, win, win_id, price, undecided_with_max = self.reversals_prioritization(undecided, active)
                             if tiebreak:
-                                win, win_id, price = self.backpressure_prioritization(undecided, locations, pressures)
+                                win, win_id, price = self.backpressure_prioritization(undecided, locations, pressures, undecided_with_max=undecided_with_max)
                             undecided.pop(win)
                         elif self._priority == "secondprice" :
                             win, win_id, price = self.secondprice_prioritization(undecided)
@@ -148,6 +148,9 @@ class GridCapacity(Grid):
                         else: 
                             win, win_id, price = self.random_prioritization(undecided)   # PRIORITIZATION using random prioritization
                             undecided.pop(win)
+
+                        if price == -1:
+                            pass
         
                         if loc == Hex(1,-1,0):
                             pass
@@ -251,7 +254,7 @@ class GridCapacity(Grid):
                                                                              
         return high_index, win_id, price
         
-    def backpressure_prioritization(self, undecided, locations, pressures):
+    def backpressure_prioritization(self, undecided, locations, pressures, undecided_with_max = []):
         """
         Using backpressure to resolve conflicts
         Inputs:
@@ -263,12 +266,23 @@ class GridCapacity(Grid):
             win_id: id of winning agent
             price: price the agent pays
         """
-        
+        # filter based on undecided_with_max
+        if len(undecided_with_max) > 0:
+            filterMax = True
+        else:
+            filterMax = False
+
         high_press = 0
         high_index = 0
 
         # find the highest backpressure
         for i, (_id, price) in enumerate(undecided):
+            
+            # skip ids not in undecided_with_max
+            if filterMax:
+                if _id not in undecided_with_max:
+                    continue
+
             update = False
 
             # if hex isn't in pressures, call it 0, it's ground -1
@@ -290,79 +304,110 @@ class GridCapacity(Grid):
                 high_press = back_press
                 high_index = i
 
-        (win_id, price) = undecided[high_index]
-                                                                            
+        (win_id, price) = undecided[high_index]     
+
         return high_index, win_id, price
 
     def accrueddelay_prioritization(self, undecided, active):
         """
         Using accrued delay to resolve conflicts
         Inputs:
-            undecided: list of tuples (index, price) of undecided flights
+            undecided: list of tuples (_id, price) of undecided flights
             active: list of active agents
         Returns:
+            tiebreak: Bool of tie between agents in accrued delay 
             high_index: integer of an index in undecided
             win_id: id of winning agent
             price: price the agent pays
+            undecided_with_max: subset of undecided that have max accrued delay value (only nonempty when there's a tie)
         """
-        high_ad = 0
-        high_index = 0
-        tiebreak = True     # at first, this is true
 
-        for i, (id, price) in enumerate(undecided):
-            update = False
+        # Create ad_list: list of tuples (_id, accrued_delay) of undecided flights
+        ad_list = []
+        for (id, price) in undecided:
             ag = [x for x in active if x._id == id][0]
+            ad_list.append((id, ag.accrued_delay))
 
-            # if accrued delay is higher than high_ad, update
-            if ag.accrued_delay > high_ad:
-                update = True
-                tiebreak = False
+        # Collect list of ids that have max accrued delay value
+        max_ad = max([x[1] for x in ad_list])
+        ad_list_max = [tup for tup in ad_list if tup[1] == max_ad]
+        ad_list_ids = [x[0] for x in ad_list_max]
+        if len(ad_list_max) == 0:
+            raise ValueError
+        elif len(ad_list_max) == 1:
+            tiebreak = False
+        else:
+            tiebreak = True
 
-            # update high_ad and high_index
-            if update:
-                high_ad = ag.accrued_delay
-                high_index = i
+        # if not a tie, return high_index, win_id 
+        if tiebreak == False:
+            high_index = [x[0] for x in undecided].index(ad_list_max[0][0])
+            (win_id, price) = undecided[high_index]
 
-        (win_id, price) = undecided[high_index]
+            # dummy value for undecided_with_max_ad
+            undecided_with_max = []
+        # if tie, return undecided_with_max_ad
+        else:
+            # dummy values if tied
+            high_index = -1
+            win_id = -1
+            price = -1
+
+            # filter undecided list to those that have max accrued delay
+            undecided_with_max = [x[0] for x in undecided if x[0] in ad_list_ids]
                                                                             
-        return tiebreak, high_index, win_id, price
+        return tiebreak, high_index, win_id, price, undecided_with_max
 
 
     def reversals_prioritization(self, undecided, active):
         """
         Using reversals to resolve conflicts
         Inputs:
-            undecided: list of tuples (index, price) of undecided flights
+            undecided: list of tuples (_id, price) of undecided flights
             active: list of active agents
             reversed: list of agents that might have experienced schedule reversal
         Returns:
+            tiebreak: Bool of tie between agents in reversals
             high_index: integer of an index in undecided
             win_id: id of winning agent
             price: price the agent pays
+            undecided_with_max: subset of undecided that have max reversals value (only nonempty when there's a tie)
         """
-        high_rev = 0
-        high_index = 0
-        tiebreak = True     # at first, this is true
-
-        for i, (id, price) in enumerate(undecided):
-            update = False
+        # Create rev_list: list of tuples (_id, reversals) of undecided flights
+        rev_list = []
+        for (id, price) in undecided:
             ag = [x for x in active if x._id == id][0]
+            rev_list.append((id, ag.reversals))
 
-            # if accrued delay is higher than high_rev, update
-            if ag.reversals > high_rev:
-                update = True
-                tiebreak = False
+        # Collect list of ids that have max reversals value
+        max_rev = max([x[1] for x in rev_list])
+        rev_list_max = [tup for tup in rev_list if tup[1] == max_rev]
+        rev_list_ids = [x[0] for x in rev_list_max]
+        if len(rev_list_max) == 0:
+            raise ValueError
+        elif len(rev_list_max) == 1:
+            tiebreak = False
+        else:
+            tiebreak = True
 
-            # update high_rev and high_index
-            if update:
-                high_rev = ag.reversals
-                high_index = i
+        # if not a tie, return high_index, win_id 
+        if tiebreak == False:
+            high_index = [x[0] for x in undecided].index(rev_list_max[0][0])
+            (win_id, price) = undecided[high_index]
 
-        (win_id, price) = undecided[high_index]
+            # dummy value for undecided_with_max_ad
+            undecided_with_max = []
+        # if tie, return undecided_with_max_ad
+        else:
+            # dummy values if tied
+            high_index = -1
+            win_id = -1
+            price = -1
 
-        # reversed = self.update_reversed(active, win_id, undecided, loc, reversed)
+            # filter undecided list to those that have max accrued delay
+            undecided_with_max = [x[0] for x in undecided if x[0] in rev_list_ids]
                                                                             
-        return tiebreak, high_index, win_id, price
+        return tiebreak, high_index, win_id, price, undecided_with_max
 
     def update_reversed(self, active, win_id, undecided, loc, reversed):
         # find scheduled arrival time at this sector for win_id
