@@ -191,6 +191,7 @@ class GridCapacity(Grid):
             if temp not in records: records[temp] = 0
             records[temp] += 1
         
+        # Check that the capacity is not exceeded
         for loc, val in records.items():
             if loc != -1:
                 assert val <= CAPACITY, print(val, locations, "\n", bids, "\n", commands, "\n", loc)

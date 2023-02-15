@@ -48,7 +48,6 @@ def simulate(grid, agents, schedule, prior = None, iters = 1e4, seed = 0, vis = 
     layout = Layout(layout_pointy, Point(1, 1), Point(0, 0))
     
     while time <= iters:
-        print("Time: ", time)
 
         if vis or debug: print("Time: ", time)
         
@@ -155,6 +154,8 @@ def simulate(grid, agents, schedule, prior = None, iters = 1e4, seed = 0, vis = 
             for op in operator_delay.keys():
                 print("Operator ", op, "# agents ", operator_counts[op], "raw delay ", 
                 operator_delay[op], "weighted delay ", operator_delay_waits[op])
+
+        print("\n \n")
 
     return grid.revenue, np.sum(delays), np.std(delays), grid.num_conflicts, \
         np.sum(agent_waits[:, 0]), np.sum(agent_waits[:, 1]), np.std(delays_weighted), \

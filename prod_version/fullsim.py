@@ -4,9 +4,19 @@ from grid import *
 from envs import *
 from simulate import *
 
+import pickle
+
 ## Try multiple runs of different tests
-def full_sim(run = 1):
-    methods = ["random", "roundrobin", "backpressure", "secondprice", "secondback"]
+'''
+Inputs:
+    run: Scenario you're using, int
+    samples: Number of samples to take, int
+    operator_flag: Whether to include operator, bool
+Outputs:
+    output: Massive data pile
+'''
+def full_sim(run = 1, samples = 100, operator_flag = False):
+    methods = ["random", "roundrobin", "backpressure", "accrueddelay", "reversals", "secondprice", "secondback"]
 
     data_avg_rev = []
     data_avg_del = []
@@ -28,10 +38,8 @@ def full_sim(run = 1):
     data_std_operator_diff_wait = []
 
     # generate test cases
-    samples = 100 
     cases = []
-    operator_flag = True
-    for i in range(samples):
+    for i in range(samples):    
         if run == 1: grid, agents, schedule = create_random(num_agents=124*2, radius=4, iters=50, operator_flag=True, seed = i + 100)
         elif run == 2: grid, agents, schedule = create_bimodal(num_agents=126, radius=7, time=50, operator_flag = operator_flag, seed = i + 1000)
         # grid, agents, schedule = create_crossing(num_agents = [40,60], radius = 7, time = 50, points = 4, seed=i+1000)
@@ -73,7 +81,7 @@ def full_sim(run = 1):
             
             grid, agents, schedule = deepcopy(cases[i])
 
-            rev, delay, std_delay, conflicts, pay_costs, wait_costs, std_delay_weighted, pay_costs_norm, wait_costs_norm, operator_count, operator_delay, operator_delay_waits = simulate(grid, agents, schedule, vis= False, prior=priority)
+            rev, delay, std_delay, conflicts, pay_costs, wait_costs, std_delay_weighted, pay_costs_norm, wait_costs_norm, operator_count, operator_delay, operator_delay_waits = simulate(grid, agents, schedule, vis= False, prior=priority, output=False, debug=False)
             avg_rev += rev
             avg_del += delay
             avg_std_del += std_delay
@@ -163,12 +171,20 @@ def full_sim(run = 1):
     output['data_std_operator_diff_raw'] = data_std_operator_diff_raw
     output['data_std_operator_diff_wait'] = data_std_operator_diff_wait
     
-    grid, agents, schedule = deepcopy(cases[23])
-    output['example'] = (grid, agents, schedule)
-
+    if samples >= 24:
+        grid, agents, schedule = deepcopy(cases[23])
+        output['example'] = (grid, agents, schedule)
+    else:
+        grid, agents, schedule = deepcopy(cases[0])
+        output['example'] = (grid, agents, schedule)
     return output
 
     
 if __name__ == "__main__":
     for i in range(1, 5):
-        output = full_sim(run = i)
+        output = full_sim(run = i, samples = 100, operator_flag = True)
+
+        if True:
+            name = "./data/fullrun_" + str(i) + ".pkl"
+            with open(name, 'wb') as f:
+                pickle.dump(output, f)
