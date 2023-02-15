@@ -9,7 +9,7 @@ from simulate import *
 # grid, agents, schedule = create_connected(radius = 3)
 # grid size = sum(1 to n) * 6 + 1
 # grid, agents, schedule = create_random(num_agents=50, radius = 2, seed = 10)          # small random scenario
-grid, agents, schedule = create_random(num_agents=256, radius=7, iters=50, seed=5)     # random scenario
+grid, agents, schedule = create_random(num_agents=256, radius=7, iters=50, seed=6)     # random scenario
 # grid, agents, schedule = create_cycle_testing_cap()                                   # cycle testing
 # grid, agents, schedule = create_connected(radius=4)                                   # connected chain of flights
 # grid, agents, schedule = create_bimodal(num_agents = 62, time = 50, radius = 3, operator_flag = True)

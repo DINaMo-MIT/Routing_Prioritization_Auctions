@@ -130,9 +130,9 @@ class GridCapacity(Grid):
                                 win, win_id, price = self.backpressure_prioritization(undecided, locations, pressures, undecided_with_max=undecided_with_max)
                             undecided.pop(win)
                         elif self._priority == "secondprice" :
-                            tiebreak, ties, win, win_id, price = self.secondprice_prioritization(undecided)
+                            tiebreak, win, win_id, price, undecided_with_max = self.secondprice_prioritization(undecided)
                             if tiebreak:
-                                win, win_id, price = self.backpressure_prioritization(ties, locations, pressures)
+                                win, win_id, price = self.backpressure_prioritization(undecided, locations, pressures, undecided_with_max=undecided_with_max)
                             assert win != None and win_id != None and price != None
                             undecided.pop(win)
                         elif self._priority == "secondback":
@@ -268,6 +268,7 @@ class GridCapacity(Grid):
             undecided: list of tuples (_id, price) of undecided flights
             locations: {id:Hex} dictionary of all locations of agents
             pressures: dictionary of hex and backpressure on hex {loc (Hex): backpressure (int)}
+            undecided_with_max: list of tuples (_id, price) of tied flights from another mechanism
         Returns:
             high_index: integer of an index in undecided
             win_id: id of winning agent
@@ -301,7 +302,6 @@ class GridCapacity(Grid):
                 update = True
 
             elif back_press == high_press and i > 0:
-                print('roundrobin tiebreak')
                 temp = [undecided[high_index], (_id, price)]
                 index, _, _ = self.roundrobin_prioritization(temp)
                 if index == 1:      # default is first instance goes
@@ -356,14 +356,15 @@ class GridCapacity(Grid):
 
         # Collect list of ids that have max accrued delay value
         max_ad = max([x[1] for x in ad_list])
-        ad_list_max = [tup for tup in ad_list if tup[1] == max_ad]
-        ad_list_ids = [x[0] for x in ad_list_max]
-        if len(ad_list_max) == 0:
-            raise ValueError
-        elif len(ad_list_max) == 1:
-            tiebreak = False
-        else:
-            tiebreak = True
+        tiebreak, ad_list_max, ad_list_ids = self.tiebreaking(ad_list, max_ad)
+        # ad_list_max = [tup for tup in ad_list if tup[1] == max_ad]
+        # ad_list_ids = [x[0] for x in ad_list_max]
+        # if len(ad_list_max) == 0:
+        #     raise ValueError
+        # elif len(ad_list_max) == 1:
+        #     tiebreak = False
+        # else:
+        #     tiebreak = True
 
         # if not a tie, return high_index, win_id 
         if tiebreak == False:
@@ -405,16 +406,18 @@ class GridCapacity(Grid):
             ag = [x for x in active if x._id == id][0]
             rev_list.append((id, ag.reversals))
 
-        # Collect list of ids that have max reversals value
+        # # Collect list of ids that have max reversals value
         max_rev = max([x[1] for x in rev_list])
-        rev_list_max = [tup for tup in rev_list if tup[1] == max_rev]
-        rev_list_ids = [x[0] for x in rev_list_max]
-        if len(rev_list_max) == 0:
-            raise ValueError
-        elif len(rev_list_max) == 1:
-            tiebreak = False
-        else:
-            tiebreak = True
+        tiebreak, rev_list_max, rev_list_ids = self.tiebreaking(rev_list, max_rev)
+
+        # rev_list_max = [tup for tup in rev_list if tup[1] == max_rev]
+        # rev_list_ids = [x[0] for x in rev_list_max]
+        # if len(rev_list_max) == 0:
+        #     raise ValueError
+        # elif len(rev_list_max) == 1:
+        #     tiebreak = False
+        # else:
+        #     tiebreak = True
 
         # if not a tie, return high_index, win_id 
         if tiebreak == False:
@@ -467,34 +470,43 @@ class GridCapacity(Grid):
             win_id: id of winning agent
             price: price the agent pays
         """
-        
-        print(undecided)
-
-        # check for ties, bounce out to backpressure if so
-        temp = deepcopy(sorted(undecided, key=lambda x: x[1], reverse=True))
-        temp = [x for x in temp if x[1] == temp[0][1]]
-        if len(temp) > 1:
-            return True, temp, None, None, None
-
-        print(undecided)
 
         # get high bid
         high_index, winner = max(enumerate(undecided), key=lambda x:x[1][1])
-        # print(undecided)
-        
-        # get price of second bid
-        new = set(undecided)
-        new.remove(winner)
-    
-        # if no one else no price
-        if not new: price = 0
-        else: price = max(new, key=lambda x: x[1])[1]
-    
-        assert price >= 0
-        if winner[0] == 103:
-            assert True
+        tiebreak, second_list_max, second_list_ids = self.tiebreaking(undecided, winner[1])
 
-        return False, undecided, high_index, winner[0], price
+        # # deal with tiebreaking
+        # second_list_max = [tup for tup in undecided if tup[1] == winner[1]]
+        # second_list_ids = [x[0] for x in second_list_max]
+        # if len(second_list_max) == 0:
+        #     raise ValueError
+        # elif len(second_list_max) == 1:
+        #     tiebreak = False
+        # else:
+        #     tiebreak = True
+
+
+        if tiebreak == False:        
+            # get price of second bid
+            new = set(undecided)
+            new.remove(winner)
+        
+            # if no one else no price
+            if not new: price = 0
+            else: price = max(new, key=lambda x: x[1])[1]
+
+            # dummy value for undecided_with_max_ad
+            undecided_with_max = []
+        else:
+            # dummy values if tied
+            high_index = -1
+            win_id = -1
+            price = -1
+
+            # filter undecided list to those that have max accrued delay
+            undecided_with_max = [x[0] for x in undecided if x[0] in second_list_ids]
+    
+        return tiebreak, high_index, winner[0], price, undecided_with_max
 
     def secondback_prioritization(self, undecided, chains_sorted):
         """
@@ -511,13 +523,97 @@ class GridCapacity(Grid):
 
         # take the top chain from the sorted list, pull id and price
         winner = chains_sorted[0]
+
+        # tiebreaking
+        secondback_list_max = [chain for chain in chains_sorted if chain["total"] == winner["total"]]
+        if len(secondback_list_max) == 0:
+            raise ValueError
+        elif len(secondback_list_max) == 1:
+            tiebreak = False
+        else:
+            tiebreak = True
+
+
+        if tiebreak == True:
+            # try to resolve with backpressure
+            max_chain_length = max([len(chain["chain"]) for chain in secondback_list_max])
+            max_chain_length_list = [chain for chain in secondback_list_max if len(chain["chain"]) == max_chain_length]
+            if len(max_chain_length_list) == 1:
+                winner = max_chain_length_list[0]
+            else:
+                # resolve with roundrobin at first differing agent
+                # find first differing agent
+                different = False
+                index = 0
+                while not different and -index < len(max_chain_length_list[0]["chain"]):
+                    index -= 1
+                    current = max_chain_length_list[0]["chain"][index]
+                    for chain in max_chain_length_list:
+                        if chain["chain"][index] != current:
+                            different = True
+                            break
+
+                # resolve with roundrobin
+                max_roundrobin = max([self._roundrobin[chain["chain"][index]] for chain in max_chain_length_list])
+                max_roundrobin_list = [chain for chain in max_chain_length_list if self._roundrobin[chain["chain"][index]] == max_roundrobin]
+                if len(max_roundrobin_list) == 1:
+                    winner = max_roundrobin_list[0]
+
+                # if there's still a tie take lowest id among leftovers
+                else:   
+                    winner = min(max_roundrobin_list, key=lambda x: x["chain"][index])
+
+
+                '''
+                # a complex system to compare all roundrobin values then compare all ids 
+                # can assume all same size chains
+                rr_exit = False
+                size = len(max_chain_length_list[0]["chain"])
+                while not rr_exit and -index < size:
+
+                    # find first differing agent
+                    different = False
+                    index = -1
+                    while not different and -index < size:
+                        # find the first differing agent
+                        current = max_chain_length_list[0]["chain"][index]
+                        for chain in max_chain_length_list:
+                            if chain["chain"][index] != current:
+                                different = True
+                                break
+                        index -= 1
+                    
+                    if -index < size:
+                        # discard everyone who's not matching to highest roundrobin
+                        max_roundrobin = max([self._roundrobin[chain["chain"][index]] for chain in max_chain_length_list])
+                        max_roundrobin_list = [chain for chain in max_chain_length_list if self._roundrobin[chain["chain"][index]] == max_roundrobin]
+                        if len(max_roundrobin_list) == 1:
+                            winner = max_roundrobin_list[0]
+                            rr_exit = True
+                        else:   # if there's still a tie
+                            max_chain_length_list = max_roundrobin_list
+
+                # if you get to the end of the chains, resolve with lowest id
+                if not rr_exit:
+                    # find first differing agent
+                    different = False
+                    index = -1
+                    while not different and -index < size:
+                        # find the first differing agent
+                        current = max_chain_length_list[0]["chain"][index]
+                        for chain in max_chain_length_list:
+                            if chain["chain"][index] != current:
+                                different = True
+                                break
+                        index -= 1
+                    winner = min(max_chain_length_list, key=lambda x: x["chain"][index])
+                '''
+
         win_id = winner["chain"][-1]
         win_price = winner["price"][-1]
         
-        # find the index
+        # find the index and second price
         win_index = undecided.index((win_id, win_price))
-
-        # find second price
         price = chains_sorted[1]["total"]
 
         # build commands for flights in the winner
@@ -759,3 +855,26 @@ class GridCapacity(Grid):
         output = max(pressures) + 1
         backpressures[req_loc] = output
         return output
+    
+    def tiebreaking(self, value_list, winning_val):
+        '''
+        Short function for telling if you need tiebreak and 
+        gathering information for tiebreaking later
+        Input:
+            undecided: the values you care about, list of tuples of (id, value)
+            winning_val: the winning value we're looking to tie, int
+        Returns:
+            tiebreak: if there is a tie, bool
+            list_max: list of tuples of (id, backpressure) that equal the winning value, [(id, backpressure), ...]
+            list_ids: list of ids that equal the winning value, [id, ...]
+        '''
+        list_max = [tup for tup in value_list if tup[1] == winning_val]
+        list_ids = [x[0] for x in list_max]
+        if len(list_max) == 0:
+            raise ValueError
+        elif len(list_max) == 1:
+            tiebreak = False
+        else:
+            tiebreak = True
+        
+        return tiebreak, list_max, list_ids
