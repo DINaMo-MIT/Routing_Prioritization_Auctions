@@ -59,7 +59,6 @@ class GridCapacity(Grid):
         for _id in cycle_ids:
             commands[_id] = bids[_id]
         
-        
         # calculate backpressure and sort - order is which sectors to deconflict first
             # NOTE: both backpressure and cycles requires building a graph at each step
         # pressures = {req: self.calc_backpressure(in_graph, req) for req in requests.keys()}     # replace pressures with the find_backpressure new function
@@ -400,7 +399,7 @@ class GridCapacity(Grid):
             price: price the agent pays
             undecided_with_max: subset of undecided that have max reversals value (only nonempty when there's a tie)
         """
-        # Create rev_list: list of tuples (_id, reversals) of undecided flights
+        # Create rev_list: list of tuples    (_id, reversals) of undecided flights
         rev_list = []
         for (id, price) in undecided:
             ag = [x for x in active if x._id == id][0]

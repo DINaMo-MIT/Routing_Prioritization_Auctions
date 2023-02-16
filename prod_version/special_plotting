@@ -1,0 +1,90 @@
+from helpers import *
+from agents import *
+from grid_cap import *
+
+def plot_locations_special(layout, coords, active, radius = 5, bids=False):
+    """
+    Plot location of agents at the moment. For visualization and debugging
+    Inputs:
+        layout: Layout object for grid visualization
+        coords: list of Hex, coordinates that exists on the grid
+        active: list of Agents, all agents active and to be plotted
+    Returns:
+    """
+
+    sns.set_theme(style="white")
+
+    locations = {}
+    for ag in active:
+        locations[ag.loc] = (ag._id, ag.finished, ag.bid[0], ag.bid[1])
+    
+    fig, ax = plt.subplots(1, figsize=(radius * 2, radius * 2), dpi= radius * 25)
+
+    # ax.set(xlim=(-7, 7), ylim=(-7,7))
+    
+    for h in coords:
+
+        color = None
+        if h in locations.keys():
+            if locations[h][1]: color = "Green"
+            else: color = "Red"
+        
+        if h == Hex(0, 0, 0): color = "Green"
+
+        # print(hex_to_pixel(layout, h))
+        x, y = hex_to_pixel(layout, h)
+        hex = RegularPolygon((x,y), numVertices=6, radius= 1, 
+                             orientation=np.radians(0), 
+                             facecolor= color, alpha=0.2, edgecolor='k', zorder = 5)
+        ax.add_patch(hex)
+        
+        if h in locations.keys() and locations[h][2] is not None:
+            x_n, y_n = hex_to_pixel(layout, locations[h][2])
+            dx = x_n - x
+            dy = y_n - y
+            arrow = Arrow(x + dx/4, y + dy/4, dx/2, dy/2, width=0.4, zorder=10)
+            ax.add_patch(arrow)
+            
+        # # Also add a text label
+        label = ''
+        if h in locations.keys():
+            if locations[h][1]: label = str(locations[h][0]) + ' *'
+            elif  bids==True: label = str(locations[h][0]) + ' $' +  str(locations[h][3])
+            else: label = str(locations[h][0])
+        ax.text(x, y, label if h in locations.keys() else '', ha='center', va='center', fontsize=24)
+
+        
+
+    # Also add scatter points in hexagon centres
+    # ax.scatter(hcoord, vcoord, c=[c[0].lower() for c in colors], alpha=0.5)
+    ax.set_aspect('equal')
+    ax.axis('off')
+    ax.autoscale()
+    plt.show()
+
+layout = Layout(layout_pointy, Point(1, 1), Point(0, 0))
+grid = Grid(2)
+
+agents = []
+agents.append(Agent(Hex(1, -1, 0), Hex(0, 0, 0), 1, 0))
+
+# small cycle
+agents.append(Agent(Hex(-1, 0, 1), Hex(-2, 0, 2), 2, 0))
+agents.append(Agent(Hex(-2, 0, 2), Hex(-1, -1, 2), 3, 0))
+agents.append(Agent(Hex(-1, -1, 2), Hex(-1, 0, 1), 2, 0))
+
+# other conflicts
+
+agents.append(Agent(Hex(0, 2, -2), Hex(0, 0, 0), 4, 0))
+agents.append(Agent(Hex(0, 1, -1), Hex(0, 0, 0), 6, 0))
+agents.append(Agent(Hex(-1, 2, -1), Hex(0, 0, 0), 2, 0))
+
+agents.append(Agent(Hex(-2, 1, 1), Hex(-2, 0, 2), 2, 0))
+
+
+# agents[1]._loc = Hex(0, -1, 1)
+for i, ag in enumerate(agents):
+    ag._id = chr(i + 65)
+    ag.move((ag._steps[ag._index], 0))
+
+plot_locations_special(layout, grid.coords_l, agents)
