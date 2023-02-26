@@ -3,6 +3,8 @@ from agents import *
 from grid import *
 from envs import *
 from simulate import *
+import os
+import pandas as pd
 
 import pickle
 
@@ -15,7 +17,70 @@ Inputs:
 Outputs:
     output: Massive data pile
 '''
-def full_sim(run = 1, samples = 100, operator_flag = False):
+
+# Define save_path
+save_path = '../data/fullrun2'
+
+def update_df(priority, i, save_path, rev, delay, std_delay, conflicts, pay_costs, wait_costs, std_delay_weighted, \
+                pay_costs_norm, wait_costs_norm, operator_count, operator_delay, operator_delay_waits, csv_name='df_stats.csv'):
+    column_ls = [
+        'run',
+        'priority',
+        'seed',
+        'rev',
+        'delay',
+        'std_delay',
+        'conflicts',
+        'pay_costs',
+        'wait_costs',
+        'std_delay_weighted',
+        'pay_costs_norm',
+        'wait_costs_norm',
+        'operator_count',
+        'operator_delay',
+        'operator_delay_waits'
+    ]
+
+    # read csv or create if doesn't exist
+    csv_path = save_path + '/' + csv_name
+    if os.path.exists(csv_path):
+        df = pd.read_csv(csv_path, index_col=False)
+    else:
+        df = pd.DataFrame(columns=column_ls)
+
+        # create entry to add
+    entry = pd.DataFrame({
+        'run': i,
+        'priority': priority,
+        'seed': i+100,
+        'rev': rev,
+        'delay': delay,
+        'std_delay': std_delay,
+        'conflicts': conflicts,
+        'pay_costs': pay_costs,
+        'wait_costs': wait_costs,
+        'std_delay_weighted': std_delay_weighted,
+        'pay_costs_norm': pay_costs_norm,
+        'wait_costs_norm': wait_costs_norm,
+        'operator_count': operator_count,
+        'operator_delay': operator_delay,
+        'operator_delay_waits': operator_delay_waits
+    },
+        index = [0]
+    )
+
+    # add to dataframe
+    if df[(df.run == i) & (df.priority == priority) & (df.seed == i+100)].shape[0] > 0:
+        print('already added to df')
+        pass
+    else:
+        df = pd.concat([df, entry], ignore_index=False)
+        df.drop_duplicates(inplace=True)
+
+    # save df
+    df.to_csv(csv_path, index=False)
+
+def full_sim(run = 1, samples = 100, operator_flag = False, save_path = './data/fullrun_'):
     methods = ["random", "roundrobin", "backpressure", "accrueddelay", "reversals", "secondprice", "secondback"]
 
     data_avg_rev = []
@@ -83,7 +148,13 @@ def full_sim(run = 1, samples = 100, operator_flag = False):
             
             grid, agents, schedule = deepcopy(cases[i])
 
-            rev, delay, std_delay, conflicts, pay_costs, wait_costs, std_delay_weighted, pay_costs_norm, wait_costs_norm, operator_count, operator_delay, operator_delay_waits = simulate(grid, agents, schedule, vis= False, prior=priority, output=False, debug=False)
+            rev, delay, std_delay, conflicts, pay_costs, wait_costs, std_delay_weighted, \
+                pay_costs_norm, wait_costs_norm, operator_count, operator_delay, operator_delay_waits = simulate(grid, agents, schedule, vis= False, prior=priority, output=False, debug=False)
+            
+            # save to df
+            update_df(priority, i, save_path, rev, delay, std_delay, conflicts, pay_costs, wait_costs, std_delay_weighted, \
+                pay_costs_norm, wait_costs_norm, operator_count, operator_delay, operator_delay_waits, csv_name='df_stats.csv')
+            
             avg_rev += rev
             avg_del += delay
             avg_std_del += std_delay
@@ -184,9 +255,11 @@ def full_sim(run = 1, samples = 100, operator_flag = False):
     
 if __name__ == "__main__":
     for i in range(1, 5):
-        output = full_sim(run = i, samples = 100, operator_flag = False)
+        output = full_sim(run = i, samples = 1, operator_flag = True, save_path=save_path)
 
         if True:
-            name = "./data/fullrun_v3_" + str(i) + ".pkl"
+            name = save_path + '/scenario' + str(i) + ".pkl"
+            if not os.path.exists(save_path):
+                os.mkdir(save_path)
             with open(name, 'wb') as f:
                 pickle.dump(output, f)
