@@ -9,7 +9,8 @@ from simulate import *
 # grid, agents, schedule = create_connected(radius = 3)
 # grid size = sum(1 to n) * 6 + 1
 # grid, agents, schedule = create_random(num_agents=50, radius = 2, seed = 10)          # small random scenario
-grid, agents, schedule = create_random(num_agents=256, radius=7, iters=50, seed=6)     # random scenario
+# grid, agents, schedule = create_random(num_agents=256, radius=7, iters=50, seed=100)     # random scenario
+grid, agents, schedule = create_random(num_agents=124*2, radius=4, iters=50, operator_flag=True, seed = 100)
 # grid, agents, schedule = create_cycle_testing_cap()                                   # cycle testing
 # grid, agents, schedule = create_connected(radius=4)                                   # connected chain of flights
 # grid, agents, schedule = create_bimodal(num_agents = 62, time = 50, radius = 3, operator_flag = True)
@@ -22,6 +23,7 @@ for i, ag in enumerate(agents):
         print("Agent ", ag._id)
         print("Origin \t", ag._origin, "\t Destination \t", ag._dest)
         print("Departure \t", ag._depart_t, "\t Sched.  Arrival \t", ag._schedule_t)
+
 
 rev, delay, std_delay, _, _, _, _, _, _, _, _, _ = simulate(grid, agents, schedule, vis= False, prior="secondprice", output=True, debug=False)
 # rev, delay, std_delay, _, _, _, _, _, _, _, _, _ = simulate(grid, agents, schedule, vis= False, prior="accrueddelay", output=True, debug=False)

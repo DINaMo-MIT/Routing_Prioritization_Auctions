@@ -40,13 +40,15 @@ def full_sim(run = 1, samples = 100, operator_flag = False):
     # generate test cases
     cases = []
     for i in range(samples):    
-        if run == 1: grid, agents, schedule = create_random(num_agents=124*2, radius=4, iters=50, operator_flag=True, seed = i + 100)
-        elif run == 2: grid, agents, schedule = create_bimodal(num_agents=126, radius=7, time=50, operator_flag = operator_flag, seed = i + 1000)
+        if run == 1: grid, agents, schedule = create_random(num_agents=124, radius=7, iters=50, operator_flag=True, seed = i+100)
+        elif run == 2: grid, agents, schedule = create_bimodal(num_agents=126, radius=7, time=50, operator_flag = operator_flag, seed = i+1000)
         # grid, agents, schedule = create_crossing(num_agents = [40,60], radius = 7, time = 50, points = 4, seed=i+1000)
-        elif run == 3: grid, agents, schedule = create_crossing(num_agents = [30, 40, 30], radius = 7, time = 50, points = 4, seed=i + 1000)
-        elif run == 4: grid, agents, schedule = create_hubspoke(num_agents = [25, 25, 25, 25, 25, 25], radius = 7, seed = i + 100)
-        cases.append((grid, agents, schedule))
+        elif run == 3: grid, agents, schedule = create_crossing(num_agents = [30, 40, 30], radius = 7, time = 50, points = 4, seed= i+1000)
+        elif run == 4: grid, agents, schedule = create_hubspoke(num_agents = [25, 25, 25, 25, 25, 25], radius = 7, seed = i+100)
 
+        for i, ag in enumerate(agents):
+            ag._id = i
+        cases.append((grid, agents, schedule))
 
     # run through priority
     for priority in methods:
@@ -182,9 +184,9 @@ def full_sim(run = 1, samples = 100, operator_flag = False):
     
 if __name__ == "__main__":
     for i in range(1, 5):
-        output = full_sim(run = i, samples = 100, operator_flag = True)
+        output = full_sim(run = i, samples = 100, operator_flag = False)
 
         if True:
-            name = "./data/fullrun_" + str(i) + ".pkl"
+            name = "./data/fullrun_v3_" + str(i) + ".pkl"
             with open(name, 'wb') as f:
                 pickle.dump(output, f)
