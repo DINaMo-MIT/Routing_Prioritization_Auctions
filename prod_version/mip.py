@@ -9,6 +9,9 @@ except:
 from pyomo.environ import *
 from pyomo.dae import *
 
+import random
+import pickle
+
 # %%
 from helpers import *   
 from agents import *
@@ -152,12 +155,12 @@ def optimal_solver(agents, Tf = 20, weights=False):
 
             for t in range(ag._depart_t, Tf):
                 if weights:
-                    sum += t * ag.cost * (m.w[ag._id, end, t+1, 2] - m.w[ag._id,end, t, 2])
+                    sum += t * ag._var_cost * (m.w[ag._id, end, t+1, 2] - m.w[ag._id,end, t, 2])
                 else:
                     sum += t * (m.w[ag._id, end, t+1, 2] - m.w[ag._id,end, t, 2])
             
             if weights:
-                sum -= ag._schedule_t  * ag.cost
+                sum -= ag._schedule_t  * ag._var_cost
             else:
                 sum -= ag._schedule_t 
         
@@ -170,22 +173,144 @@ def optimal_solver(agents, Tf = 20, weights=False):
     # m.w.pprint()
 
 
-    return value(m.obj), m.w
+    return value(m.obj), m.w, m
 
-
+# %%
 
 # %%
 """
 Testing
 """
 
-grid, agents, schedule = create_random(num_agents = 124*2, radius = 4, iters = 50, seed = 6)
+delay_dict = {}
+stdev_delay_dict = {}
 
-for i, ag in enumerate(agents):
-    ag._id = i
+# parameters
+priority = 'backpressure'
+samples = 100
+Tf = 70
 
-optimal_delay, vars = optimal_solver(agents, Tf=70)
-print('Optimal Delay:', optimal_delay)
+for run in [1,2,3,4]:
+    print('starting run:', run)
+
+    # Initialize dicts
+    delay_dict[run] = {'protocol': {'unweighted': [], 'weighted': []}, 
+                'optimize': {'unweighted': [], 'weighted': []}}
+    stdev_delay_dict[run] = {'protocol': {'unweighted': [], 'weighted': []}, 
+                        'optimize': {'unweighted': [], 'weighted': []}}
+
+    # loop through samples
+    for s in range(samples):
+
+        # Create agents
+        if run == 1: grid, agents, schedule = create_random(num_agents=124, radius=7, iters=50, operator_flag=True, seed = s+100)
+        elif run == 2: grid, agents, schedule = create_bimodal(num_agents=126, radius=7, time=50, operator_flag = True, seed = s+1000)
+        # grid, agents, schedule = create_crossing(num_agents = [40,60], radius = 7, time = 50, points = 4, seed=i+1000)
+        elif run == 3: grid, agents, schedule = create_crossing(num_agents = [15, 20, 15], radius = 7, time = 50, points = 4, seed= s+1000)
+        elif run == 4: grid, agents, schedule = create_hubspoke(num_agents = [15, 15, 15, 15, 15, 15], radius = 7, seed = s+100)
+
+
+        # protocol
+        rev, delay, std_delay, conflicts, pay_costs, wait_costs, std_delay_weighted, \
+                        pay_costs_norm, wait_costs_norm, operator_count, operator_delay, operator_delay_waits = simulate(grid, agents, schedule, vis=False, prior=priority, output=False, debug=False)
+        print(delay)
+
+        # save to dicts
+        delay_dict[run]['protocol']['unweighted'].append(delay)
+        delay_dict[run]['protocol']['weighted'].append(wait_costs)
+        stdev_delay_dict[run]['protocol']['unweighted'].append(std_delay)
+        stdev_delay_dict[run]['protocol']['weighted'].append(std_delay_weighted)
+
+        # optimization
+        for j, ag in enumerate(agents):
+            ag._id = j
+        optimal_delay, w, model = optimal_solver(agents, Tf=Tf)
+        w_dict = w.extract_values()
+        # print('Optimal Delay:', optimal_delay)
+
+        # calculate metrics
+        delays = []
+        weighted_delays = []
+        for i, ag in enumerate(agents):
+            id = ag._id
+            dest = ag._steps[-1]
+            sch_arr = ag._schedule_t
+            for t in range(sch_arr, Tf+1):
+                # find arrival times
+                if w_dict[id,dest.q,dest.r,dest.s,t,1] > 0.99:
+                    flt_delay = t - sch_arr
+                    delays.append(flt_delay)
+                    flt_weighted_delay = flt_delay * ag._var_cost
+                    weighted_delays.append(flt_weighted_delay)
+                    break
+
+        # save to dicts
+        delay_dict[run]['optimize']['unweighted'].append(np.sum(delays))
+        delay_dict[run]['optimize']['weighted'].append(np.sum(weighted_delays))
+        stdev_delay_dict[run]['optimize']['unweighted'].append(np.std(delays))
+        stdev_delay_dict[run]['optimize']['weighted'].append(np.std(weighted_delays))        
+
+
 # %%
+# save to pickle
+with open('delay.pickle', 'wb') as handle:
+    pickle.dump(delay_dict, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
+with open('stdev_delay.pickle', 'wb') as handle2:
+    pickle.dump(stdev_delay_dict, handle2, protocol=pickle.HIGHEST_PROTOCOL)
+
+
+# %%
+"""
+Record delay and weighted delay for each agent
+inputs: 
+- agents: list of agent objects
+- w_dict: w decision variables
+"""
+delay_dict
+# stdev_delay_dict
+# delays
+
+        
+
+    
+# %%
+# %%
+# load pickle
+with open('delay.pickle', 'rb') as handle:
+    delay_dict = pickle.load(handle)
+
+# %%
+with open('stdev_delay.pickle', 'rb') as handle:
+    std_delay_dict = pickle.load(handle)
+
+
+# %%
+delay_dict
+# %%
+for run in [1,2,3,4]:
+    
+    print('run', run)
+
+    # delay
+    delay = (np.mean(delay_dict[run]['optimize']['unweighted']) - 
+             np.mean(delay_dict[run]['protocol']['unweighted'])) / np.mean(delay_dict[run]['optimize']['unweighted'])
+    print('delay:', np.round(delay*100,1),'%')
+
+    # std delay
+    std_delay = (np.mean(std_delay_dict[run]['optimize']['unweighted']) - 
+             np.mean(std_delay_dict[run]['protocol']['unweighted'])) / np.mean(std_delay_dict[run]['optimize']['unweighted'])
+    print('stdev delay:', np.round(std_delay*100,1),'%')
+
+
+    # weighted delay
+    weighted_delay = (np.mean(delay_dict[run]['optimize']['weighted']) - 
+             np.mean(delay_dict[run]['protocol']['weighted'])) / np.mean(delay_dict[run]['optimize']['weighted'])
+    print('weighted delay:', np.round(weighted_delay*100,1),'%')
+
+
+    # stdev weighted delay
+    std_weighted_delay = (np.mean(std_delay_dict[run]['optimize']['weighted']) - 
+             np.mean(std_delay_dict[run]['protocol']['weighted'])) / np.mean(std_delay_dict[run]['optimize']['weighted'])
+    print('stdev weighted delay:', np.round(std_weighted_delay*100,1),'%')
 # %%
