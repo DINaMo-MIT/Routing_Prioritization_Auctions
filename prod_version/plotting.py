@@ -31,7 +31,7 @@ parameters = {'axes.labelsize': 16,
 plt.rcParams.update(parameters)
 
 # f, axs = plt.subplots(9, len(scenes), figsize=(7.75 * len(scenes), 7.5 * 5), gridspec_kw=dict(height_ratios=[4, 0.25, 4, 1, 4, 1, 4, 1, 4], width_ratios=[1,1,1,1], wspace = 0.3, hspace = 0), dpi=300)
-f, axs = plt.subplots(len(scenes), 5, figsize=(7.5 * 3 + 4.25, 7.75 * len(scenes)), gridspec_kw=dict(width_ratios=[4, 1.25, 4, 1, 4], height_ratios=[1,1,1,1], hspace = 0.2, wspace = 0), dpi=30)
+f, axs = plt.subplots(len(scenes), 5, figsize=(7.5 * 3 + 4.25, 7.75 * len(scenes)), gridspec_kw=dict(width_ratios=[4, 1.25, 4, 1, 4], height_ratios=[1,1,1,1], hspace = 0.2, wspace = 0), dpi=300)
 title = True
 
 # hiding the extra column
@@ -47,7 +47,7 @@ for i in range(len(outputs)):
     final_plotter2(outputs[i], axs[i, :], scenario = scenes[i], title=title)
     title=False
 
-if False:
-    plt.savefig('./presentation work/FiA_work/full_sim_output_v5.png', bbox_inches='tight')
+if True:
+    plt.savefig('./presentation work/FiA_work/full_sim_output_v6.png', bbox_inches='tight')
 else:
     plt.show()

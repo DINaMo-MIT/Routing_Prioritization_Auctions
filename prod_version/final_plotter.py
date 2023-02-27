@@ -114,7 +114,7 @@ def final_plotter2(output, axs, scenario = "NULL", title= True):
     # extra = axs[0].twinx()
     # extra.set_ylabel(scenario, fontsize=26, labelpad=-100, loc='left')
     # extra.set_yticks([])
-    axs[0].set_xlabel(scenario, fontsize=26, labelpad=10)
+    axs[0].set_ylabel(scenario, fontsize=26, labelpad=10)
 
 
     if title:
@@ -143,9 +143,9 @@ def final_plotter2(output, axs, scenario = "NULL", title= True):
         # axs[0].set_title("Example Scenario", rotation=90, x=-0.3, y=0.2)
         # axs[2].set_title("Delay vs. \n Standard Deviation Delay", rotation=90, x=-0.3, y=0.2)
         # axs[4].set_title("Weighted Delay vs. \n Weighted Standard Deviation Delay", rotation=90, x=-0.3, y=0.05)
-        axs[0].set_title("Example Scenario", x=0.5, y=1.15)
-        axs[2].set_title("Delay vs. \n Standard Deviation Delay", x=0.5, y=1.15)
-        axs[4].set_title("Weighted Delay vs. \n Weighted Standard Deviation Delay", x=0.5, y=1.15)
+        axs[0].set_title("Example Scenario", x=0.5, y=1.05)
+        axs[2].set_title("Delay vs. \n Standard Deviation Delay", x=0.5, y=1.05)
+        axs[4].set_title("Weighted Delay vs. \n Weighted Standard Deviation Delay", x=0.5, y=1.05)
         # axs[6].set_title("Raw Standard Deviation \n across Operators", rotation=90, x=-0.3, y=0.15)
         # axs[8].set_title("Weighted Standard Deviation \n across Operators", rotation=90, x=-0.3, y=0.1)
 
@@ -172,15 +172,18 @@ def final_plotter2(output, axs, scenario = "NULL", title= True):
     # axs[2].set(xlabel= 'Weighted Delay', ylabel = "Weighted St. Dev. Delay")
     # axs[3].set(ylabel = 'Raw Delay')
     # axs[4].set(ylabel = 'Weighted Delay') 
-    axs[0].axis('off')
+    # axs[0].axis('off')
 
     # axs[0].set_ymargin(0)
-    # axs[0].tick_params(
-    #     axis='both',          # changes apply to the x-axis
-    #     which='both',      # both major and minor ticks are affected
-    #     bottom=False,      # ticks along the bottom edge are off
-    #     top=False,         # ticks along the top edge are off
-    #     labelbottom=False) # labels along the bottom edge are off
+    axs[0].tick_params(
+        axis='both',          # changes apply to the x-axis
+        which='both',      # both major and minor ticks are affected
+        bottom=False,      # ticks along the bottom edge are off
+        top=False,         # ticks along the top edge are off
+        left=False,
+        right=False,
+        labelbottom=False,
+        labelleft=False) # labels along the bottom edge are off
 
     axs[2].set_xlabel('Delay (time units)', fontsize=ticksize)
     axs[2].set_ylabel('St. Dev. Delay', fontsize=ticksize)
