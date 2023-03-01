@@ -157,7 +157,9 @@ def simulate(grid, agents, schedule, prior = None, iters = 1e4, seed = 0, vis = 
 
         print("\n \n")
 
+    # time added on 2/27/22, may need to remove later
+    # perhaps this should be dictionary output
     return grid.revenue, np.sum(delays), np.std(delays), grid.num_conflicts, \
         np.sum(agent_waits[:, 0]), np.sum(agent_waits[:, 1]), np.std(delays_weighted), \
         np.sum(agent_waits_norm[:, 0]), np.sum(agent_waits_norm[:, 1]), \
-        operator_counts, operator_delay, operator_delay_waits
+        operator_counts, operator_delay, operator_delay_waits, time             
