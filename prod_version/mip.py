@@ -190,7 +190,7 @@ priority = 'backpressure'
 samples = 100
 Tf = 70
 
-for run in [1,2,3,4]:
+for run in [1]:     #[1,2,3,4]:
     print('starting run:', run)
 
     # Initialize dicts
@@ -212,8 +212,12 @@ for run in [1,2,3,4]:
 
         # protocol
         rev, delay, std_delay, conflicts, pay_costs, wait_costs, std_delay_weighted, \
-                        pay_costs_norm, wait_costs_norm, operator_count, operator_delay, operator_delay_waits = simulate(grid, agents, schedule, vis=False, prior=priority, output=False, debug=False)
-        print(delay)
+            pay_costs_norm, wait_costs_norm, operator_count, operator_delay, \
+                operator_delay_waits, timesteps = simulate(grid, agents, schedule, vis=False, prior=priority, output=False, debug=False)
+        print('Protocol Delay:', delay, 'across {} time steps'.format(timesteps))
+
+        # final time of optimization equals to number of timesteps in protocol
+        Tf = timesteps + 1
 
         # save to dicts
         delay_dict[run]['protocol']['unweighted'].append(delay)
@@ -248,8 +252,12 @@ for run in [1,2,3,4]:
         delay_dict[run]['optimize']['unweighted'].append(np.sum(delays))
         delay_dict[run]['optimize']['weighted'].append(np.sum(weighted_delays))
         stdev_delay_dict[run]['optimize']['unweighted'].append(np.std(delays))
-        stdev_delay_dict[run]['optimize']['weighted'].append(np.std(weighted_delays))        
+        stdev_delay_dict[run]['optimize']['weighted'].append(np.std(weighted_delays))
 
+        # print instantaneous difference        
+        print_delay = (np.mean(delay_dict[run]['optimize']['unweighted']) - 
+        np.mean(delay_dict[run]['protocol']['unweighted'])) / np.mean(delay_dict[run]['optimize']['unweighted'])
+        print('delay:', np.round(print_delay*100,1),'%')
 
 # %%
 # save to pickle
