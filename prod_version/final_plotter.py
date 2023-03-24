@@ -119,6 +119,9 @@ def final_plotter2(output, axs, scenario = "NULL", title= True):
 
     if title:
 
+        axs[2].legend(markerscale=2, ncol=2)
+        axs[4].legend(markerscale=2, ncol=2)
+
         plt.setp(axs[2].get_legend().get_texts(), fontsize='17')
         plt.setp(axs[2].get_legend().get_title(), fontsize='30')
 
@@ -143,15 +146,17 @@ def final_plotter2(output, axs, scenario = "NULL", title= True):
         # axs[0].set_title("Example Scenario", rotation=90, x=-0.3, y=0.2)
         # axs[2].set_title("Delay vs. \n Standard Deviation Delay", rotation=90, x=-0.3, y=0.2)
         # axs[4].set_title("Weighted Delay vs. \n Weighted Standard Deviation Delay", rotation=90, x=-0.3, y=0.05)
-        axs[0].set_title("Example Scenario", x=0.5, y=1.05)
-        axs[2].set_title("Delay vs. \n Standard Deviation Delay", x=0.5, y=1.05)
-        axs[4].set_title("Weighted Delay vs. \n Weighted Standard Deviation Delay", x=0.5, y=1.05)
+        axs[0].set_title("Example Scenario", x=0.5, y=1.05, fontsize=30)
+        axs[2].set_title("Delay vs. \n Standard Deviation Delay", x=0.5, y=1.05, fontsize=26)
+        axs[4].set_title("Weighted Delay vs. \n Weighted Standard Deviation Delay", x=0.5, y=1.05, fontsize=26)
         # axs[6].set_title("Raw Standard Deviation \n across Operators", rotation=90, x=-0.3, y=0.15)
         # axs[8].set_title("Weighted Standard Deviation \n across Operators", rotation=90, x=-0.3, y=0.1)
 
         # extra = axs[0].twiny()
         # extra.set_xlabel(scenario, fontsize=26, labelpad=10)
         # extra.set_xticks([])
+
+
 
     # fig, ax = plt.subplots()
     # ax.bar(methods, data_avg_operator_diff_raw)
@@ -166,7 +171,7 @@ def final_plotter2(output, axs, scenario = "NULL", title= True):
     # f.set_axis_labels('Delay', "St. Dev. Delay")
 
     sidesize=18
-    ticksize = 20
+    ticksize = 26
 
     # axs[1].set(xlabel= 'Delay', ylabel = "St. Dev. Delay")
     # axs[2].set(xlabel= 'Weighted Delay', ylabel = "Weighted St. Dev. Delay")
@@ -185,11 +190,11 @@ def final_plotter2(output, axs, scenario = "NULL", title= True):
         labelbottom=False,
         labelleft=False) # labels along the bottom edge are off
 
-    axs[2].set_xlabel('Delay (time units)', fontsize=ticksize)
+    axs[2].set_xlabel('Delay (time steps)', fontsize=ticksize)
     axs[2].set_ylabel('St. Dev. Delay', fontsize=ticksize)
     axs[2].tick_params(labelsize=sidesize)
 
-    axs[4].set_xlabel('Weighted Delay (time units)', fontsize=ticksize)
+    axs[4].set_xlabel('Weighted Delay (cost * time steps)', fontsize=ticksize)
     axs[4].set_ylabel('Weighted St. Dev. Delay', fontsize=ticksize)
     axs[4].tick_params(labelsize=sidesize)
 
