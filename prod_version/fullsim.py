@@ -19,7 +19,7 @@ Outputs:
 '''
 
 # Define save_path
-save_path = '../data/fullrun2'
+save_path = './data/fullrun_0.3'
 
 def update_df(priority, i, save_path, rev, delay, std_delay, conflicts, pay_costs, wait_costs, std_delay_weighted, \
                 pay_costs_norm, wait_costs_norm, operator_count, operator_delay, operator_delay_waits, csv_name='df_stats.csv'):
@@ -104,12 +104,13 @@ def full_sim(run = 1, samples = 100, operator_flag = False, save_path = './data/
 
     # generate test cases
     cases = []
+    ratio = 0.6
     for i in range(samples):    
-        if run == 1: grid, agents, schedule = create_random(num_agents=124, radius=7, iters=50, operator_flag=True, seed = i+100)
-        elif run == 2: grid, agents, schedule = create_bimodal(num_agents=126, radius=7, time=50, operator_flag = operator_flag, seed = i+1000)
+        if run == 1: grid, agents, schedule = create_random(num_agents=100, radius=7, iters=50, operator_flag=True, seed = i+100)
+        elif run == 2: grid, agents, schedule = create_bimodal(num_agents=100, radius=7, time=50, operator_flag = operator_flag, seed = i+1000)
         # grid, agents, schedule = create_crossing(num_agents = [40,60], radius = 7, time = 50, points = 4, seed=i+1000)
         elif run == 3: grid, agents, schedule = create_crossing(num_agents = [30, 40, 30], radius = 7, time = 50, points = 4, seed= i+1000)
-        elif run == 4: grid, agents, schedule = create_hubspoke(num_agents = [25, 25, 25, 25, 25, 25], radius = 7, seed = i+100)
+        elif run == 4: grid, agents, schedule = create_hubspoke(num_agents = [17, 17, 17, 17, 17, 17], radius = 7, seed = i+100)
 
         for i, ag in enumerate(agents):
             ag._id = i
@@ -255,7 +256,7 @@ def full_sim(run = 1, samples = 100, operator_flag = False, save_path = './data/
     
 if __name__ == "__main__":
     for i in range(1, 5):
-        output = full_sim(run = i, samples = 1, operator_flag = True, save_path=save_path)
+        output = full_sim(run = i, samples = 100, operator_flag = True, save_path=save_path)
 
         if True:
             name = save_path + '/scenario' + str(i) + ".pkl"

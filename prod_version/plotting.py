@@ -16,7 +16,8 @@ outputs = []
 for i in range(1, 5):
     temp = None
     # name = "./data/output_" + str(i) + ".pkl"
-    name = "./data/fullrun_v3_" + str(i) + ".pkl"
+    # name = "./data/fullrun_v3_" + str(i) + ".pkl"
+    name = "./data/fullrun_0.9/scenario" + str(i) + ".pkl"
     with open(name, 'rb') as f:
         temp = pickle.load(f)
     
@@ -48,6 +49,7 @@ for i in range(len(outputs)):
     title=False
 
 if True:
-    plt.savefig('./presentation work/FiA_work/full_sim_output_v7.png', bbox_inches='tight')
+    # plt.savefig('./presentation work/FiA_work/full_sim_output_0.9_v1.png', bbox_inches='tight')
+    plt.savefig('./presentation work/FiA_work/harvest.png', bbox_inches='tight')
 else:
     plt.show()

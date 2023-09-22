@@ -146,11 +146,15 @@ def final_plotter2(output, axs, scenario = "NULL", title= True):
         # axs[0].set_title("Example Scenario", rotation=90, x=-0.3, y=0.2)
         # axs[2].set_title("Delay vs. \n Standard Deviation Delay", rotation=90, x=-0.3, y=0.2)
         # axs[4].set_title("Weighted Delay vs. \n Weighted Standard Deviation Delay", rotation=90, x=-0.3, y=0.05)
-        axs[0].set_title("Example Scenario", x=0.5, y=1.05, fontsize=30)
-        axs[2].set_title("Delay vs. \n Standard Deviation Delay", x=0.5, y=1.05, fontsize=26)
-        axs[4].set_title("Weighted Delay vs. \n Weighted Standard Deviation Delay", x=0.5, y=1.05, fontsize=26)
+        # axs[0].set_title("Example Scenario", x=0.5, y=1.05, fontsize=30)
+        # axs[2].set_title("Delay vs. \n Standard Deviation Delay", x=0.5, y=1.05, fontsize=26)
+        # axs[4].set_title("Weighted Delay vs. \n Weighted Standard Deviation Delay", x=0.5, y=1.05, fontsize=26)
         # axs[6].set_title("Raw Standard Deviation \n across Operators", rotation=90, x=-0.3, y=0.15)
         # axs[8].set_title("Weighted Standard Deviation \n across Operators", rotation=90, x=-0.3, y=0.1)
+
+        axs[0].set_title("$N_{aircraft} / N_{sectors} \, = \, 0.4$", x=0.5, y=1.05, fontsize=30)
+        axs[2].set_title("$N_{aircraft} / N_{sectors} \, = \, 0.6$", x=0.5, y=1.05, fontsize=30)
+        axs[4].set_title("$N_{aircraft} / N_{sectors} \, = \, 0.9$", x=0.5, y=1.05, fontsize=30)
 
         # extra = axs[0].twiny()
         # extra.set_xlabel(scenario, fontsize=26, labelpad=10)
